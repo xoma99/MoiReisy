@@ -32,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,18 +81,31 @@ fun MoiReisyApp() {
     var showFuelForm by remember { mutableStateOf(false) }
     var showExpenseForm by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
-    var defaultRate by remember { mutableStateOf(context.getSharedPreferences("settings", 0).getFloat("default_rate", 7f).toString()) }
+    val settingsPrefs = remember { context.getSharedPreferences("settings", 0) }
+    var defaultRate by remember { mutableStateOf(settingsPrefs.getFloat("default_rate", 7f).toString()) }
+    var themeMode by remember { mutableStateOf(settingsPrefs.getString("theme_mode", "SYSTEM") ?: "SYSTEM") }
+    val systemDarkTheme = isSystemInDarkTheme()
+    val darkTheme = when (themeMode) {
+        "LIGHT" -> false
+        "DARK" -> true
+        else -> systemDarkTheme
+    }
     val trackingPrefs = remember { context.getSharedPreferences("tracking_state", 0) }
     var activeTripId by remember { mutableLongStateOf(trackingPrefs.getLong("active_trip_id", -1L)) }
     var trackingPaused by remember { mutableStateOf(trackingPrefs.getBoolean("paused", false)) }
     val selected = trips.firstOrNull { it.id == selectedTrip }
 
     MaterialTheme(
-        colorScheme = darkColorScheme(
+        colorScheme = if (darkTheme) darkColorScheme(
             primary = androidx.compose.ui.graphics.Color(0xFF55B9D5),
             secondary = androidx.compose.ui.graphics.Color(0xFF9AB8C4),
             background = androidx.compose.ui.graphics.Color(0xFF101820),
             surface = androidx.compose.ui.graphics.Color(0xFF1A2732)
+        ) else lightColorScheme(
+            primary = androidx.compose.ui.graphics.Color(0xFF087E9B),
+            secondary = androidx.compose.ui.graphics.Color(0xFF526B76),
+            background = androidx.compose.ui.graphics.Color(0xFFF6F8FA),
+            surface = androidx.compose.ui.graphics.Color(0xFFFFFFFF)
         )
     ) {
         Scaffold(
@@ -257,6 +271,7 @@ fun MoiReisyApp() {
         if (showSettings) {
             SettingsDialog(
                 currentRate = defaultRate,
+                currentTheme = themeMode,
                 automaticBackupEnabled = context.getSharedPreferences("settings", 0)
                     .getBoolean(AutomaticBackupWorker.KEY_ENABLED, false),
                 lastAutomaticBackupAt = context.getSharedPreferences("settings", 0)
@@ -264,8 +279,10 @@ fun MoiReisyApp() {
                 onDismiss = { showSettings = false },
                 onBackup = { backupPicker.launch("MoiReisy_backup_${System.currentTimeMillis()}.zip") },
                 onRestore = { restorePicker.launch(arrayOf("application/zip", "application/octet-stream")) },
-                onSave = { value, automaticBackup ->
+                onSave = { value, automaticBackup, selectedTheme ->
                     AutomaticBackupScheduler.setEnabled(context, automaticBackup)
+                    settingsPrefs.edit().putString("theme_mode", selectedTheme).apply()
+                    themeMode = selectedTheme
                     val parsed = value.replace(',', '.').toFloatOrNull()
                     if (parsed != null && parsed >= 0) {
                         context.getSharedPreferences("settings", 0).edit().putFloat("default_rate", parsed).apply()
@@ -703,20 +720,30 @@ private fun DailyLogForm(onDismiss: () -> Unit, onSave: (Double, Double, String,
 @Composable
 private fun SettingsDialog(
     currentRate: String,
+    currentTheme: String,
     automaticBackupEnabled: Boolean,
     lastAutomaticBackupAt: Long,
     onDismiss: () -> Unit,
     onBackup: () -> Unit,
     onRestore: () -> Unit,
-    onSave: (String, Boolean) -> Unit
+    onSave: (String, Boolean, String) -> Unit
 ) {
     var rate by remember(currentRate) { mutableStateOf(currentRate) }
+    var selectedTheme by remember(currentTheme) { mutableStateOf(currentTheme) }
     var automaticBackup by remember(automaticBackupEnabled) { mutableStateOf(automaticBackupEnabled) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Настройки оплаты") },
+        title = { Text("Настройки приложения") },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("Тема приложения", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                listOf("SYSTEM" to "Системная", "LIGHT" to "Светлая", "DARK" to "Тёмная").forEach { (value, label) ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        RadioButton(selected = selectedTheme == value, onClick = { selectedTheme = value })
+                        Text(label, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
                 Text("Ставка по умолчанию применяется к новым рейсам. Для отдельного рейса её можно изменить перед стартом.")
                 Spacer(Modifier.height(10.dp))
                 FormField("Ставка, ₽ за километр", rate) { rate = it }
@@ -745,7 +772,7 @@ private fun SettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(rate, automaticBackup) }, enabled = (rate.replace(',', '.').toFloatOrNull() ?: -1f) >= 0) { Text("Сохранить") }
+            TextButton(onClick = { onSave(rate, automaticBackup, selectedTheme) }, enabled = (rate.replace(',', '.').toFloatOrNull() ?: -1f) >= 0) { Text("Сохранить") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
     )
