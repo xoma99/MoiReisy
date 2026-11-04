@@ -23,6 +23,9 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -30,6 +33,10 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -80,6 +87,7 @@ fun MoiReisyApp() {
     var showFuelForm by remember { mutableStateOf(false) }
     var showExpenseForm by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf("home") }
     var defaultRate by remember { mutableStateOf(context.getSharedPreferences("settings", 0).getFloat("default_rate", 7f).toString()) }
     val trackingPrefs = remember { context.getSharedPreferences("tracking_state", 0) }
     var activeTripId by remember { mutableLongStateOf(trackingPrefs.getLong("active_trip_id", -1L)) }
@@ -87,48 +95,123 @@ fun MoiReisyApp() {
     val selected = trips.firstOrNull { it.id == selectedTrip }
 
     MaterialTheme(
-        colorScheme = darkColorScheme(
-            primary = androidx.compose.ui.graphics.Color(0xFF55B9D5),
-            secondary = androidx.compose.ui.graphics.Color(0xFF9AB8C4),
-            background = androidx.compose.ui.graphics.Color(0xFF101820),
-            surface = androidx.compose.ui.graphics.Color(0xFF1A2732)
+        colorScheme = lightColorScheme(
+            primary = Color(0xFF1769E0),
+            onPrimary = Color.White,
+            primaryContainer = Color(0xFFE7F0FF),
+            onPrimaryContainer = Color(0xFF123B78),
+            secondary = Color(0xFF00A6A6),
+            onSecondary = Color.White,
+            tertiary = Color(0xFFF59E0B),
+            background = Color(0xFFF4F7FB),
+            onBackground = Color(0xFF172B4D),
+            surface = Color.White,
+            onSurface = Color(0xFF172B4D),
+            surfaceVariant = Color(0xFFEAF0F8),
+            onSurfaceVariant = Color(0xFF64748B),
+            outline = Color(0xFFDCE5F0),
+            error = Color(0xFFDC4545)
         )
     ) {
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
                     title = {
-                        Column {
+                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                             Text("Мои Рейсы", fontWeight = FontWeight.Bold)
                             Text(
-                                when { selected != null -> "Карточка рейса"; showFinance -> "Финансовый отчёт"; showFuel -> "Учёт топлива"; else -> "Журнал перевозок" },
+                                when {
+                                    selected != null -> "Карточка рейса"
+                                    showFinance -> "Финансовый отчёт"
+                                    showFuel -> "Учёт топлива"
+                                    else -> "Ваш рабочий день"
+                                },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.secondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     },
                     navigationIcon = {
                         if (selected != null || showFinance || showFuel) {
-                            IconButton(onClick = { selectedTrip = null; showFinance = false; showFuel = false }) {
+                            IconButton(onClick = {
+                                selectedTrip = null
+                                showFinance = false
+                                showFuel = false
+                                selectedTab = "home"
+                            }) {
                                 Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                             }
                         }
                     },
                     actions = {
                         if (selected == null && !showFinance && !showFuel) {
-                            IconButton(onClick = { showSettings = true }) {
-                                Icon(Icons.Default.Settings, contentDescription = "Настройки")
-                            }
                             IconButton(onClick = { showForm = true }) {
                                 Icon(Icons.Default.Add, contentDescription = "Добавить рейс")
                             }
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = MaterialTheme.colorScheme.primary
+                    )
                 )
+            },
+            bottomBar = {
+                if (selected == null) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        tonalElevation = 8.dp
+                    ) {
+                        NavigationBarItem(
+                            selected = selectedTab == "home",
+                            onClick = {
+                                selectedTab = "home"
+                                showFinance = false
+                                showFuel = false
+                            },
+                            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                            label = { Text("Главная", maxLines = 1) }
+                        )
+                        NavigationBarItem(
+                            selected = selectedTab == "finance",
+                            onClick = {
+                                selectedTab = "finance"
+                                showFinance = true
+                                showFuel = false
+                            },
+                            icon = { Icon(Icons.Default.ReceiptLong, contentDescription = null) },
+                            label = { Text("Финансы", maxLines = 1) }
+                        )
+                        NavigationBarItem(
+                            selected = selectedTab == "fuel",
+                            onClick = {
+                                selectedTab = "fuel"
+                                showFinance = false
+                                showFuel = true
+                            },
+                            icon = { Icon(Icons.Default.LocalGasStation, contentDescription = null) },
+                            label = { Text("Топливо", maxLines = 1) }
+                        )
+                        NavigationBarItem(
+                            selected = false,
+                            onClick = { showSettings = true },
+                            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                            label = { Text("Настройки", maxLines = 1) }
+                        )
+                    }
+                }
             },
             floatingActionButton = {
                 if (selected == null && !showFinance && !showFuel) {
-                    FloatingActionButton(onClick = { showForm = true }) {
+                    FloatingActionButton(
+                        onClick = { showForm = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) {
                         Icon(Icons.Default.Add, contentDescription = "Новый рейс")
                     }
                 }
@@ -206,10 +289,10 @@ fun MoiReisyApp() {
                 showFuel -> FuelReport(entries = fuelEntries, trips = trips, onAdd = { showFuelForm = true }, modifier = Modifier.padding(padding))
                 else -> Dashboard(
                     trips = trips,
+                    logs = allLogs,
+                    activeTripId = activeTripId,
+                    trackingPaused = trackingPaused,
                     onSelect = { selectedTrip = it },
-                    onFinance = { showFinance = true },
-                    onFuel = { showFuel = true },
-                    onSettings = { showSettings = true },
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -261,7 +344,7 @@ fun MoiReisyApp() {
                     .getBoolean(AutomaticBackupWorker.KEY_ENABLED, false),
                 lastAutomaticBackupAt = context.getSharedPreferences("settings", 0)
                     .getLong(AutomaticBackupWorker.KEY_LAST_BACKUP, 0L),
-                onDismiss = { showSettings = false },
+                onDismiss = { showSettings = false; selectedTab = "home" },
                 onBackup = { backupPicker.launch("MoiReisy_backup_${System.currentTimeMillis()}.zip") },
                 onRestore = { restorePicker.launch(arrayOf("application/zip", "application/octet-stream")) },
                 onSave = { value, automaticBackup ->
@@ -272,6 +355,7 @@ fun MoiReisyApp() {
                         defaultRate = parsed.toString()
                     }
                     showSettings = false
+                    selectedTab = "home"
                 }
             )
         }
@@ -298,110 +382,303 @@ fun MoiReisyApp() {
 
 @Composable
 private fun Dashboard(
-    trips: List<Trip>, onSelect: (Long) -> Unit,
-    onFinance: () -> Unit, onFuel: () -> Unit, onSettings: () -> Unit,
+    trips: List<Trip>,
+    logs: List<DailyLog>,
+    activeTripId: Long,
+    trackingPaused: Boolean,
+    onSelect: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val totalKm = trips.sumOf { it.totalKm }
+    val gpsGroups = logs.filter { it.note.startsWith("GPS ·") }
+        .map { Triple(it.tripId, dayBucket(it.dayStart), it.mileageType) }.toSet()
+    val validLogs = logs.filter {
+        it.note.startsWith("GPS ·") ||
+            Triple(it.tripId, dayBucket(it.dayStart), it.mileageType) !in gpsGroups
+    }
+    val totalIncome = validLogs.sumOf { it.km * it.ratePerKm }
+    val activeTrip = trips.firstOrNull { it.id == activeTripId }
+    val currency = remember { NumberFormat.getCurrencyInstance(Locale("ru", "RU")) }
+    val today = remember {
+        SimpleDateFormat("EEEE, d MMMM", Locale("ru", "RU"))
+            .format(Date()).uppercase(Locale("ru", "RU"))
+    }
 
-    Column(modifier.fillMaxSize().padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+    BoxWithConstraints(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        val compact = maxWidth < 380.dp
+        val pagePadding = if (compact) 14.dp else 20.dp
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().widthIn(max = 760.dp),
+            contentPadding = PaddingValues(
+                start = pagePadding,
+                end = pagePadding,
+                top = 16.dp,
+                bottom = 24.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatCard("Всего рейсов", trips.size.toString(), Modifier.weight(1f))
-            StatCard("Пробег, км", "%.0f".format(totalKm), Modifier.weight(1f))
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            OutlinedButton(
-                onClick = onFinance,
-                modifier = Modifier.weight(1f).height(82.dp),
-                contentPadding = PaddingValues(4.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.AccountBalanceWallet, null)
-                    Text("Финансы", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        today,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "Обзор поездок",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        "Маршруты, пробег и заработок",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
-            OutlinedButton(
-                onClick = onFuel,
-                modifier = Modifier.weight(1f).height(82.dp),
-                contentPadding = PaddingValues(4.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("⛽", style = MaterialTheme.typography.titleMedium)
-                    Text("Топливо", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+            if (activeTrip != null) {
+                item {
+                    Card(
+                        onClick = { onSelect(activeTrip.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    if (trackingPaused) "РЕЙС НА ПАУЗЕ" else "АКТИВНЫЙ РЕЙС",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White.copy(alpha = .82f),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Surface(
+                                    color = Color.White.copy(alpha = .18f),
+                                    shape = RoundedCornerShape(50)
+                                ) {
+                                    Text(
+                                        if (trackingPaused) "Пауза" else "GPS включён",
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                "${activeTrip.fromPlace} → ${activeTrip.toPlace}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "${activeTrip.cargo.ifBlank { "Груз не указан" }} · ${"%.0f".format(activeTrip.totalKm)} км",
+                                    color = Color.White.copy(alpha = .86f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    "Открыть  ›",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            OutlinedButton(
-                onClick = onSettings,
-                modifier = Modifier.weight(1f).height(82.dp),
-                contentPadding = PaddingValues(4.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Settings, null)
-                    Text("Настройки", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(18.dp)) {
+                        Text(
+                            "Начислено за пробег",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(5.dp))
+                        Text(
+                            currency.format(totalIncome),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "Рейсов",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    trips.size.toString(),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "Общий пробег",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "${"%.0f".format(totalKm)} км",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        Spacer(Modifier.height(22.dp))
-        Text(
-            "История поездок",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(8.dp))
-
-        if (trips.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    "Пока нет рейсов",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    "Нажмите «+», чтобы добавить первую поездку.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary
-                )
+            item {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Последние рейсы",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "Всего ${trips.size}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(trips, key = { it.id }) { trip ->
+
+            if (trips.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                "Первый рейс начинается здесь",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "Добавьте маршрут, укажите ставку за километр и начните вести учёт поездок.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(trips.take(8), key = { it.id }) { trip ->
                     Card(
                         onClick = { onSelect(trip.id) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
-                        Column(Modifier.padding(16.dp)) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(7.dp)
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "${trip.fromPlace} → ${trip.toPlace}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Surface(
+                                    color = when {
+                                        trip.status.contains("заверш", ignoreCase = true) -> Color(0xFFE7F7ED)
+                                        trip.status.contains("пауз", ignoreCase = true) -> Color(0xFFFFF3D9)
+                                        else -> MaterialTheme.colorScheme.primaryContainer
+                                    },
+                                    shape = RoundedCornerShape(50)
+                                ) {
+                                    Text(
+                                        trip.status,
+                                        color = when {
+                                            trip.status.contains("заверш", ignoreCase = true) -> Color(0xFF16834A)
+                                            trip.status.contains("пауз", ignoreCase = true) -> Color(0xFF9A6700)
+                                            else -> MaterialTheme.colorScheme.onPrimaryContainer
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                                        maxLines = 1
+                                    )
+                                }
+                            }
                             Text(
-                                "${trip.fromPlace} → ${trip.toPlace}",
-                                fontWeight = FontWeight.Bold
+                                trip.cargo.ifBlank { "Груз не указан" },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(Modifier.height(5.dp))
-                            Text(
-                                "${trip.cargo.ifBlank { "Груз не указан" }} · ${trip.status}",
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                            Spacer(Modifier.height(5.dp))
-                            Text(
-                                "Накладная: ${trip.waybill.ifBlank { "—" }} · %.1f км"
-                                    .format(trip.totalKm)
-                            )
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Накладная № ${trip.waybill.ifBlank { "—" }}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    "${"%.0f".format(trip.totalKm)} км",
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
@@ -409,7 +686,6 @@ private fun Dashboard(
         }
     }
 }
-
 
 @Composable
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
