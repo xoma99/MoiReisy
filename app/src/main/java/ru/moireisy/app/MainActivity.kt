@@ -11,6 +11,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +41,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,33 +90,82 @@ fun MoiReisyApp() {
     var showFuelForm by remember { mutableStateOf(false) }
     var showExpenseForm by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
-    var defaultRate by remember { mutableStateOf(context.getSharedPreferences("settings", 0).getFloat("default_rate", 7f).toString()) }
+    val settingsPrefs = remember { context.getSharedPreferences("settings", 0) }
+    var defaultRate by remember { mutableStateOf(settingsPrefs.getFloat("default_rate", 7f).toString()) }
+    var themeMode by remember { mutableStateOf(settingsPrefs.getString("theme_mode", "SYSTEM") ?: "SYSTEM") }
+    val systemDarkTheme = isSystemInDarkTheme()
+    val darkTheme = when (themeMode) {
+        "LIGHT" -> false
+        "DARK" -> true
+        else -> systemDarkTheme
+    }
     val trackingPrefs = remember { context.getSharedPreferences("tracking_state", 0) }
     var activeTripId by remember { mutableLongStateOf(trackingPrefs.getLong("active_trip_id", -1L)) }
     var trackingPaused by remember { mutableStateOf(trackingPrefs.getBoolean("paused", false)) }
     val selected = trips.firstOrNull { it.id == selectedTrip }
 
     MaterialTheme(
-        colorScheme = darkColorScheme(
-            primary = androidx.compose.ui.graphics.Color(0xFF55B9D5),
-            secondary = androidx.compose.ui.graphics.Color(0xFF9AB8C4),
-            background = androidx.compose.ui.graphics.Color(0xFF101820),
-            surface = androidx.compose.ui.graphics.Color(0xFF1A2732)
+        colorScheme = if (darkTheme) darkColorScheme(
+            primary = androidx.compose.ui.graphics.Color(0xFF7F9EF3),
+            onPrimary = androidx.compose.ui.graphics.Color(0xFF141414),
+            secondary = androidx.compose.ui.graphics.Color(0xFFD2E0FA),
+            onSecondary = androidx.compose.ui.graphics.Color(0xFF141414),
+            background = androidx.compose.ui.graphics.Color(0xFF141414),
+            onBackground = androidx.compose.ui.graphics.Color(0xFFF0F0F0),
+            surface = androidx.compose.ui.graphics.Color(0xFF1F1F1F),
+            onSurface = androidx.compose.ui.graphics.Color(0xFFF0F0F0),
+            surfaceVariant = androidx.compose.ui.graphics.Color(0xFF262626),
+            onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFA6A6A6),
+            outline = androidx.compose.ui.graphics.Color(0xFF424242),
+            outlineVariant = androidx.compose.ui.graphics.Color(0xFF343434),
+            surfaceContainerLowest = androidx.compose.ui.graphics.Color(0xFF1F1F1F),
+            surfaceContainerLow = androidx.compose.ui.graphics.Color(0xFF1F1F1F),
+            surfaceContainer = androidx.compose.ui.graphics.Color(0xFF1F1F1F),
+            surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF1F1F1F),
+            surfaceContainerHighest = androidx.compose.ui.graphics.Color(0xFF262626),
+            primaryContainer = androidx.compose.ui.graphics.Color(0xFF2D4278),
+            onPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFD6E4FF),
+            secondaryContainer = androidx.compose.ui.graphics.Color(0xFF262626),
+            onSecondaryContainer = androidx.compose.ui.graphics.Color(0xFFD2E0FA),
+            error = androidx.compose.ui.graphics.Color(0xFFFF7875),
+            tertiary = androidx.compose.ui.graphics.Color(0xFF9AB8C4)
+        ) else lightColorScheme(
+            primary = androidx.compose.ui.graphics.Color(0xFF2F54EB),
+            onPrimary = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+            secondary = androidx.compose.ui.graphics.Color(0xFF597EF7),
+            onSecondary = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+            background = androidx.compose.ui.graphics.Color(0xFFF5F7FC),
+            onBackground = androidx.compose.ui.graphics.Color(0xFF262626),
+            surface = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+            onSurface = androidx.compose.ui.graphics.Color(0xFF262626),
+            surfaceVariant = androidx.compose.ui.graphics.Color(0xFFF0F5FF),
+            onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF595959),
+            outline = androidx.compose.ui.graphics.Color(0xFFD9E0F0),
+            outlineVariant = androidx.compose.ui.graphics.Color(0xFFE8ECF5),
+            surfaceContainerLowest = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+            surfaceContainerLow = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+            surfaceContainer = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+            surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+            surfaceContainerHighest = androidx.compose.ui.graphics.Color(0xFFF0F5FF),
+            primaryContainer = androidx.compose.ui.graphics.Color(0xFF2F54EB),
+            onPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFFFFFFF),
+            secondaryContainer = androidx.compose.ui.graphics.Color(0xFFE6EBFB),
+            onSecondaryContainer = androidx.compose.ui.graphics.Color(0xFF1D39C4),
+            error = androidx.compose.ui.graphics.Color(0xFFCF1322),
+            tertiary = androidx.compose.ui.graphics.Color(0xFF1D39C4)
         )
     ) {
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
                     title = {
-                        Column {
-                            Text("Мои Рейсы", fontWeight = FontWeight.Bold)
-                            Text(
-                                when { selected != null -> "Карточка рейса"; showFinance -> "Финансовый отчёт"; showFuel -> "Учёт топлива"; else -> "Журнал перевозок" },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                        }
+                        Text(
+                            when { selected != null -> "Карточка рейса"; showFinance -> "Финансы"; showFuel -> "Топливо"; else -> "Мои Рейсы" },
+                            fontWeight = FontWeight.Bold
+                        )
                     },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                     navigationIcon = {
                         if (selected != null || showFinance || showFuel) {
                             IconButton(onClick = { selectedTrip = null; showFinance = false; showFuel = false }) {
@@ -119,18 +178,40 @@ fun MoiReisyApp() {
                             IconButton(onClick = { showSettings = true }) {
                                 Icon(Icons.Default.Settings, contentDescription = "Настройки")
                             }
-                            IconButton(onClick = { showForm = true }) {
-                                Icon(Icons.Default.Add, contentDescription = "Добавить рейс")
-                            }
                         }
                     }
                 )
             },
             floatingActionButton = {
                 if (selected == null && !showFinance && !showFuel) {
-                    FloatingActionButton(onClick = { showForm = true }) {
+                    FloatingActionButton(onClick = { showForm = true }, shape = androidx.compose.foundation.shape.CircleShape) {
                         Icon(Icons.Default.Add, contentDescription = "Новый рейс")
                     }
+                }
+            },
+            bottomBar = {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ) {
+                    NavigationBarItem(
+                        selected = selected != null || (!showFinance && !showFuel),
+                        onClick = { selectedTrip = null; showFinance = false; showFuel = false },
+                        icon = { Icon(Icons.Default.Map, contentDescription = null) },
+                        label = { Text("Рейсы") }
+                    )
+                    NavigationBarItem(
+                        selected = showFinance,
+                        onClick = { selectedTrip = null; showFinance = true; showFuel = false },
+                        icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+                        label = { Text("Финансы") }
+                    )
+                    NavigationBarItem(
+                        selected = showFuel,
+                        onClick = { selectedTrip = null; showFinance = false; showFuel = true },
+                        icon = { Text("⛽") },
+                        label = { Text("Топливо") }
+                    )
                 }
             }
         ) { padding ->
@@ -239,6 +320,7 @@ fun MoiReisyApp() {
         }
         if (showLog && selected != null) {
             DailyLogForm(
+                trip = selected,
                 onDismiss = { showLog = false },
                 onSave = { km, hours, note, mileageType ->
                     scope.launch {
@@ -257,6 +339,7 @@ fun MoiReisyApp() {
         if (showSettings) {
             SettingsDialog(
                 currentRate = defaultRate,
+                currentTheme = themeMode,
                 automaticBackupEnabled = context.getSharedPreferences("settings", 0)
                     .getBoolean(AutomaticBackupWorker.KEY_ENABLED, false),
                 lastAutomaticBackupAt = context.getSharedPreferences("settings", 0)
@@ -264,8 +347,10 @@ fun MoiReisyApp() {
                 onDismiss = { showSettings = false },
                 onBackup = { backupPicker.launch("MoiReisy_backup_${System.currentTimeMillis()}.zip") },
                 onRestore = { restorePicker.launch(arrayOf("application/zip", "application/octet-stream")) },
-                onSave = { value, automaticBackup ->
+                onSave = { value, automaticBackup, selectedTheme ->
                     AutomaticBackupScheduler.setEnabled(context, automaticBackup)
+                    settingsPrefs.edit().putString("theme_mode", selectedTheme).apply()
+                    themeMode = selectedTheme
                     val parsed = value.replace(',', '.').toFloatOrNull()
                     if (parsed != null && parsed >= 0) {
                         context.getSharedPreferences("settings", 0).edit().putFloat("default_rate", parsed).apply()
@@ -303,105 +388,85 @@ private fun Dashboard(
     modifier: Modifier = Modifier
 ) {
     val totalKm = trips.sumOf { it.totalKm }
-
-    Column(modifier.fillMaxSize().padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+    BoxWithConstraints(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        val pagePadding = if (maxWidth < 360.dp) 14.dp else 18.dp
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp),
+            contentPadding = PaddingValues(start = pagePadding, end = pagePadding, top = 14.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatCard("Всего рейсов", trips.size.toString(), Modifier.weight(1f))
-            StatCard("Пробег, км", "%.0f".format(totalKm), Modifier.weight(1f))
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            OutlinedButton(
-                onClick = onFinance,
-                modifier = Modifier.weight(1f).height(82.dp),
-                contentPadding = PaddingValues(4.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.AccountBalanceWallet, null)
-                    Text("Финансы", style = MaterialTheme.typography.labelMedium, maxLines = 1)
-                }
-            }
-
-            OutlinedButton(
-                onClick = onFuel,
-                modifier = Modifier.weight(1f).height(82.dp),
-                contentPadding = PaddingValues(4.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("⛽", style = MaterialTheme.typography.titleMedium)
-                    Text("Топливо", style = MaterialTheme.typography.labelMedium, maxLines = 1)
-                }
-            }
-
-            OutlinedButton(
-                onClick = onSettings,
-                modifier = Modifier.weight(1f).height(82.dp),
-                contentPadding = PaddingValues(4.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Settings, null)
-                    Text("Настройки", style = MaterialTheme.typography.labelMedium, maxLines = 1)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(22.dp))
-        Text(
-            "История поездок",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(8.dp))
-
-        if (trips.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    "Пока нет рейсов",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    "Нажмите «+», чтобы добавить первую поездку.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(trips, key = { it.id }) { trip ->
-                    Card(
-                        onClick = { onSelect(trip.id) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(SimpleDateFormat("EEEE, d MMMM", Locale("ru", "RU")).format(Date()).uppercase(Locale("ru", "RU")),
+                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Обзор поездок", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text("Все рейсы и пробег в одном месте", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(Modifier.padding(16.dp)) {
-                            Text(
-                                "${trip.fromPlace} → ${trip.toPlace}",
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.height(5.dp))
-                            Text(
-                                "${trip.cargo.ifBlank { "Груз не указан" }} · ${trip.status}",
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                            Spacer(Modifier.height(5.dp))
-                            Text(
-                                "Накладная: ${trip.waybill.ifBlank { "—" }} · %.1f км"
-                                    .format(trip.totalKm)
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Text("За всё время", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                                Icon(Icons.Default.Map, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Рейсы", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(trips.size.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    Text("Пробег", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("%.0f км".format(totalKm), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                QuickActionGroup(onFinance = onFinance, onFuel = onFuel, onSettings = onSettings)
+            }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text("Последние рейсы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Text("Все " + trips.size, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (trips.isEmpty()) {
+                item {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Пока нет рейсов", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text("Нажмите «+», чтобы добавить первый рейс.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            } else {
+                item {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.padding(horizontal = 14.dp)) {
+                            trips.forEachIndexed { index, trip ->
+                                if (index > 0) Divider()
+                                Column(
+                                    Modifier.fillMaxWidth().clickable { onSelect(trip.id) }.padding(vertical = 13.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                        Text(trip.fromPlace + " → " + trip.toPlace, fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                                            fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                        Spacer(Modifier.width(8.dp))
+                                        StatusBadge(trip.status)
+                                    }
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(trip.cargo.ifBlank { "Груз не указан" }, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                                        Text("Накладная № " + trip.waybill.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f),
+                                            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                        Text("%.0f км".format(trip.totalKm), fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -410,14 +475,61 @@ private fun Dashboard(
     }
 }
 
+@Composable
+private fun QuickActionGroup(onFinance: () -> Unit, onFuel: () -> Unit, onSettings: () -> Unit) {
+    val shape = RoundedCornerShape(8.dp)
+    Row(
+        Modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline, shape),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f).clickable(onClick = onFinance).padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text("Финансы", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        }
+        Box(Modifier.width(1.dp).height(56.dp).background(MaterialTheme.colorScheme.outline))
+        Column(Modifier.weight(1f).clickable(onClick = onFuel).padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text("⛽", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text("Топливо", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        }
+        Box(Modifier.width(1.dp).height(56.dp).background(MaterialTheme.colorScheme.outline))
+        Column(Modifier.weight(1f).clickable(onClick = onSettings).padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text("Настройки", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun StatusBadge(label: String) {
+    val normalized = label.lowercase(Locale.getDefault())
+    val backgroundColor = when {
+        normalized.contains("заверш") -> androidx.compose.ui.graphics.Color(0xFFF6FFED)
+        normalized.contains("пауз") || normalized.contains("останов") -> androidx.compose.ui.graphics.Color(0xFFFFF7E6)
+        normalized.contains("путь") || normalized.contains("рейс") -> MaterialTheme.colorScheme.surfaceVariant
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val textColor = when {
+        normalized.contains("заверш") -> androidx.compose.ui.graphics.Color(0xFF237804)
+        normalized.contains("пауз") || normalized.contains("останов") -> androidx.compose.ui.graphics.Color(0xFFD48806)
+        else -> MaterialTheme.colorScheme.primary
+    }
+    Surface(color = backgroundColor, contentColor = textColor, shape = RoundedCornerShape(6.dp)) {
+        Text(label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall, maxLines = 1)
+    }
+}
 
 @Composable
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
-    Card(modifier) {
-        Column(Modifier.padding(16.dp)) {
-            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
-            Spacer(Modifier.height(6.dp))
-            Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+    Card(modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(5.dp))
+            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -438,196 +550,338 @@ private fun TripDetails(
     val scope = rememberCoroutineScope()
     var selectedMileageType by remember(trip.id) {
         mutableStateOf(context.getSharedPreferences("settings", 0)
-            .getString("mileage_type_${trip.id}", TrackingService.TYPE_LOADED) ?: TrackingService.TYPE_LOADED)
+            .getString("mileage_type_" + trip.id, TrackingService.TYPE_LOADED) ?: TrackingService.TYPE_LOADED)
     }
     var showPauseDialog by remember(trip.id) { mutableStateOf(false) }
     var pauseReason by remember(trip.id) { mutableStateOf(TrackingService.PAUSE_LOADING) }
-    val locationPermission = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { grants ->
+    val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
         if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
-            onStart(selectedMileageType)
-        }
+            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true) onStart(selectedMileageType)
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
             try { context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
             catch (_: Exception) {}
-            scope.launch {
-                dao.insertDocument(TripDocument(tripId = trip.id, uri = it.toString(),
-                    title = "Документ ${docs.size + 1}"))
-            }
+            scope.launch { dao.insertDocument(TripDocument(tripId = trip.id, uri = it.toString(), title = "Документ " + (docs.size + 1))) }
         }
     }
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Text("${trip.fromPlace} → ${trip.toPlace}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("Статус: ${trip.status} · ${date(trip.startAt)}", color = MaterialTheme.colorScheme.secondary)
-        Spacer(Modifier.height(16.dp))
-        InfoLine("Груз", trip.cargo)
-        InfoLine("Номер накладной", trip.waybill)
-        InfoLine("Отправитель", trip.sender)
-        InfoLine("Получатель", trip.receiver)
-        InfoLine("Автомобиль", trip.vehicle)
-        InfoLine("Пробег по рейсу", "%.1f км".format(trip.totalKm))
-        InfoLine("Ставка оплаты", "%.2f ₽/км".format(trip.ratePerKm))
-        InfoLine("Начислено по рейсу", NumberFormat.getCurrencyInstance(Locale("ru", "RU")).format(logs.sumOf { it.km * it.ratePerKm }))
-        Spacer(Modifier.height(16.dp))
-        Text("Тип текущего пробега", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            FilterChip(
-                selected = selectedMileageType == TrackingService.TYPE_LOADED,
-                onClick = {
-                    selectedMileageType = TrackingService.TYPE_LOADED
-                    context.getSharedPreferences("settings", 0).edit().putString("mileage_type_${trip.id}", selectedMileageType).apply()
-                    if (activeTripId == trip.id) onChangeType(selectedMileageType)
-                },
-                label = { Text("С грузом") },
-                modifier = Modifier.weight(1f)
-            )
-            FilterChip(
-                selected = selectedMileageType == TrackingService.TYPE_EMPTY,
-                onClick = {
-                    selectedMileageType = TrackingService.TYPE_EMPTY
-                    context.getSharedPreferences("settings", 0).edit().putString("mileage_type_${trip.id}", selectedMileageType).apply()
-                    if (activeTripId == trip.id) onChangeType(selectedMileageType)
-                },
-                label = { Text("Без груза") },
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Text("Ставка: %.2f ₽/км · применяется к выбранному типу".format(trip.ratePerKm),
-            color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodySmall)
-        if (activeTripId == trip.id) {
-            Text(
-                if (isPaused) "Статус GPS: пауза" else "Статус GPS: запись маршрута активна",
-                color = if (isPaused) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (activeTripId != trip.id) {
-                Button(
-                    onClick = {
-                        val permissions = mutableListOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        )
-                        if (Build.VERSION.SDK_INT >= 33) permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-                        locationPermission.launch(permissions.toTypedArray())
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.PlayArrow, null); Text(" GPS")
+    val isActive = activeTripId == trip.id
+    val earned = logs.sumOf { it.km * it.ratePerKm }
+    val status = if (isActive && isPaused) "На паузе" else if (isActive) "В пути" else trip.status
+    BoxWithConstraints(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        val pagePadding = if (maxWidth < 360.dp) 12.dp else 16.dp
+        Column(
+            Modifier.fillMaxWidth().widthIn(max = 520.dp).verticalScroll(rememberScrollState())
+                .padding(horizontal = pagePadding, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
+                    Text(trip.fromPlace + " → " + trip.toPlace, style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f),
+                        maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    Spacer(Modifier.width(8.dp))
+                    StatusBadge(status)
                 }
-            } else if (isPaused) {
-                Button(onClick = { onResume(selectedMileageType) }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.PlayArrow, null); Text(" Продолжить")
-                }
-            } else {
-                OutlinedButton(onClick = { showPauseDialog = true }, modifier = Modifier.weight(1f)) {
-                    Text("Пауза")
-                }
+                Text(
+                    "Рейс от " + SimpleDateFormat("d MMMM yyyy", Locale("ru", "RU")).format(Date(trip.startAt)) +
+                        if (trip.waybill.isBlank()) "" else " · накладная " + trip.waybill,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
-            OutlinedButton(onClick = onStop, enabled = activeTripId == trip.id, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.Stop, null); Text(" Стоп")
-            }
-        }
-        if (showPauseDialog) {
-            AlertDialog(
-                onDismissRequest = { showPauseDialog = false },
-                title = { Text("Причина остановки") },
-                text = {
-                    Column {
-                        listOf(TrackingService.PAUSE_LOADING, TrackingService.PAUSE_UNLOADING,
-                            TrackingService.PAUSE_WAITING, TrackingService.PAUSE_REST,
-                            TrackingService.PAUSE_OTHER).forEach { reason ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(selected = pauseReason == reason, onClick = { pauseReason = reason })
-                                Text(reason)
-                            }
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Сводка по рейсу", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Пробег", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("%.1f км".format(trip.totalKm), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text("Начислено", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(NumberFormat.getCurrencyInstance(Locale("ru", "RU")).format(earned),
+                                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
+                                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                     }
-                },
-                confirmButton = {
-                    TextButton(onClick = { onPause(pauseReason); showPauseDialog = false }) { Text("Начать паузу") }
-                },
-                dismissButton = { TextButton(onClick = { showPauseDialog = false }) { Text("Отмена") } }
-            )
-        }
-        OutlinedButton(onClick = onAddLog, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, null); Text(" Добавить дневной пробег")
-        }
-        Text("Пробег по дням", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        val groupedLogs = logs.groupBy { Triple(it.dayStart, it.mileageType, it.ratePerKm) }.values.map { entries ->
-            entries.first().copy(km = entries.sumOf { it.km }, hours = entries.sumOf { it.hours })
-        }.sortedByDescending { it.dayStart }
-        if (groupedLogs.isEmpty()) Text("Дневные записи пока отсутствуют.")
-        groupedLogs.forEach { log ->
-            ListItem(
-                headlineContent = { Text(date(log.dayStart)) },
-                supportingContent = {
-                    Text("${if (log.mileageType == "EMPTY") "Без груза" else "С грузом"} · ${log.hours} ч · ${log.note}")
-                },
-                trailingContent = { Text("%.1f км".format(log.km)) }
-            )
-        }
-        Spacer(Modifier.height(14.dp))
-        Text("Остановки и паузы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        val pauseTotalMs = pauses.sumOf { pause ->
-            (pause.endedAt ?: System.currentTimeMillis()) - pause.startedAt
-        }.coerceAtLeast(0L)
-        InfoLine("Общее время пауз", durationText(pauseTotalMs))
-        InfoLine("Оценка времени движения", durationText(estimateMovingTimeMs(trackPoints, pauses)))
-        Text("Время движения оценивается по GPS-интервалам; стоянки и интервалы с пропусками GPS не включаются.",
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-        if (pauses.isEmpty()) {
-            Text("Остановок пока нет.", color = MaterialTheme.colorScheme.secondary)
-        } else {
-            pauses.forEach { pause ->
-                ListItem(
-                    headlineContent = { Text(pause.reason) },
-                    supportingContent = { Text("${date(pause.startedAt)} — ${pause.endedAt?.let { date(it) } ?: "сейчас"}") },
-                    trailingContent = {
-                        Text(durationText(((pause.endedAt ?: System.currentTimeMillis()) - pause.startedAt).coerceAtLeast(0L)))
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Информация о рейсе", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.padding(horizontal = 14.dp)) {
+                        InfoLine("Груз", trip.cargo)
+                        HorizontalDivider()
+                        InfoLine("Отправитель", trip.sender)
+                        HorizontalDivider()
+                        InfoLine("Получатель", trip.receiver)
+                        HorizontalDivider()
+                        InfoLine("Автомобиль", trip.vehicle)
+                        HorizontalDivider()
+                        InfoLine("Ставка", "%.2f ₽/км".format(trip.ratePerKm))
+                    }
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text("Учет пробега", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Text("%.2f ₽/км".format(trip.ratePerKm), color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                SegmentedChoiceGroup(
+                    options = listOf("С грузом" to TrackingService.TYPE_LOADED, "Без груза" to TrackingService.TYPE_EMPTY),
+                    selected = selectedMileageType,
+                    onSelect = { mileageType ->
+                        selectedMileageType = mileageType
+                        context.getSharedPreferences("settings", 0).edit().putString("mileage_type_" + trip.id, mileageType).apply()
+                        if (isActive) onChangeType(mileageType)
+                    }
+                )
+                if (isActive) Text(
+                    if (isPaused) "Запись маршрута приостановлена" else "Запись маршрута активна",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall
+                )
+                ActionSegmentGroup(
+                    firstLabel = when { !isActive -> "▶  Начать рейс"; isPaused -> "▶  Продолжить"; else -> "Ⅱ  Пауза" },
+                    secondLabel = "✓  Завершить рейс",
+                    onFirst = {
+                        if (!isActive) {
+                            val permissions = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                            if (Build.VERSION.SDK_INT >= 33) permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                            locationPermission.launch(permissions.toTypedArray())
+                        } else if (isPaused) onResume(selectedMileageType) else showPauseDialog = true
+                    },
+                    onSecond = onStop,
+                    secondEnabled = isActive
+                )
+            }
+            if (showPauseDialog) {
+                val reasons = listOf(TrackingService.PAUSE_LOADING, TrackingService.PAUSE_UNLOADING,
+                    TrackingService.PAUSE_REST, TrackingService.PAUSE_WAITING, TrackingService.PAUSE_OTHER)
+                AlertDialog(
+                    onDismissRequest = { showPauseDialog = false },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    title = { Text("Причина остановки") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Выберите, почему GPS-запись будет приостановлена.", style = MaterialTheme.typography.bodyMedium)
+                            reasons.chunked(2).forEach { rowItems ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                    rowItems.forEach { reason ->
+                                        val selectedReason = pauseReason == reason
+                                        Card(
+                                            onClick = { pauseReason = reason },
+                                            modifier = Modifier.weight(1f),
+                                            colors = CardDefaults.cardColors(containerColor =
+                                                if (selectedReason) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface),
+                                            border = androidx.compose.foundation.BorderStroke(
+                                                1.dp, if (selectedReason) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                            )
+                                        ) {
+                                            Column(Modifier.fillMaxWidth().padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text(when (reason) {
+                                                    TrackingService.PAUSE_LOADING -> "▣"
+                                                    TrackingService.PAUSE_UNLOADING -> "▤"
+                                                    TrackingService.PAUSE_REST -> "☕"
+                                                    TrackingService.PAUSE_WAITING -> "⌛"
+                                                    else -> "•••"
+                                                }, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
+                                                Text(reason, textAlign = TextAlign.Center, maxLines = 2,
+                                                    style = MaterialTheme.typography.labelMedium)
+                                            }
+                                        }
+                                    }
+                                    if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = { showPauseDialog = false }) { Text("Отмена") }
+                            Button(onClick = { onPause(pauseReason); showPauseDialog = false }) { Text("Начать паузу") }
+                        }
                     }
                 )
             }
-        }
-        Spacer(Modifier.height(14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Документы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f))
-            IconButton(onClick = { picker.launch(arrayOf("image/*", "application/pdf")) }) {
-                Icon(Icons.Default.AttachFile, "Добавить документ")
-            }
-        }
-        Text("Файлы: ${docs.size}")
-        docs.forEach { doc ->
-            ListItem(
-                headlineContent = { Text(doc.title) },
-                supportingContent = { Text(doc.uri, maxLines = 1) },
-                trailingContent = {
-                    IconButton(onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(doc.uri), "*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        try { context.startActivity(intent) } catch (_: Exception) {}
-                    }) { Icon(Icons.Default.Map, "Открыть") }
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Text("Пробег по дням", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        SmallFloatingActionButton(onClick = onAddLog) { Icon(Icons.Default.Add, contentDescription = "Добавить запись пробега") }
+                    }
+                    val groupedLogs = logs.groupBy { Triple(it.dayStart, it.mileageType, it.ratePerKm) }.values.map { entries ->
+                        entries.first().copy(km = entries.sumOf { it.km }, hours = entries.sumOf { it.hours })
+                    }.sortedByDescending { it.dayStart }
+                    if (groupedLogs.isEmpty()) {
+                        Text("Дневные записи пока отсутствуют.", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 10.dp))
+                    } else groupedLogs.forEachIndexed { index, log ->
+                        if (index > 0) HorizontalDivider()
+                        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(if (index == 0) "Сегодня · " + SimpleDateFormat("d MMMM", Locale("ru", "RU")).format(Date(log.dayStart))
+                                    else SimpleDateFormat("d MMMM", Locale("ru", "RU")).format(Date(log.dayStart)), fontWeight = FontWeight.SemiBold)
+                                Text((if (log.mileageType == "EMPTY") "Без груза" else "С грузом") + " · " +
+                                    durationText((log.hours * 60 * 60 * 1000).toLong()) +
+                                    if (log.note.startsWith("GPS ·")) " · GPS" else "",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Text("%.1f км".format(log.km), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
                 }
-            )
-        }
-        Spacer(Modifier.height(20.dp))
-        OutlinedButton(onClick = onDelete, modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-            Icon(Icons.Default.Delete, null); Text(" Удалить рейс")
+            }
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.padding(14.dp)) {
+                    Text("Остановки и паузы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    val pauseTotalMs = pauses.sumOf { (it.endedAt ?: System.currentTimeMillis()) - it.startedAt }.coerceAtLeast(0L)
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Время пауз", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(durationText(pauseTotalMs), fontWeight = FontWeight.SemiBold)
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text("Время в движении", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(durationText(estimateMovingTimeMs(trackPoints, pauses)), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    Text("Время движения рассчитано по GPS-интервалам.", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+                    if (pauses.isEmpty()) Text("Остановок пока нет.", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 10.dp))
+                    else pauses.forEachIndexed { index, pause ->
+                        if (index > 0) HorizontalDivider()
+                        Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(pause.reason, fontWeight = FontWeight.SemiBold)
+                                Text(SimpleDateFormat("d MMMM, HH:mm", Locale("ru", "RU")).format(Date(pause.startedAt)) +
+                                    " — " + (pause.endedAt?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it)) } ?: "сейчас"),
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Text(durationText(((pause.endedAt ?: System.currentTimeMillis()) - pause.startedAt).coerceAtLeast(0L)))
+                        }
+                    }
+                }
+            }
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Text("Документы · " + docs.size, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        IconButton(onClick = { picker.launch(arrayOf("image/*", "application/pdf")) }) {
+                            Icon(Icons.Default.AttachFile, "Добавить документ", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                    if (docs.isEmpty()) Text("Прикрепите накладную или фото документов.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else docs.forEachIndexed { index, doc ->
+                        if (index > 0) HorizontalDivider()
+                        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.AttachFile, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(doc.title, fontWeight = FontWeight.SemiBold, maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text("PDF · документ рейса", style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            TextButton(onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(doc.uri), "*/*")
+                                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                try { context.startActivity(intent) } catch (_: Exception) {}
+                            }) { Text("Открыть") }
+                        }
+                    }
+                }
+            }
+            OutlinedButton(
+                onClick = onDelete, modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Icon(Icons.Default.Delete, null); Spacer(Modifier.width(8.dp)); Text("Удалить рейс")
+            }
         }
     }
 }
 
 @Composable
 private fun InfoLine(label: String, value: String) {
-    ListItem(headlineContent = { Text(label, color = MaterialTheme.colorScheme.secondary) },
-        supportingContent = { Text(value.ifBlank { "—" }) })
+    Column(Modifier.fillMaxWidth().padding(vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+        Text(value.ifBlank { "—" }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
+            modifier = Modifier.fillMaxWidth(), maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun SegmentedChoiceGroup(
+    options: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(8.dp)
+    Row(
+        modifier.fillMaxWidth().clip(shape).border(1.dp, MaterialTheme.colorScheme.outline, shape),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        options.forEachIndexed { index, option ->
+            if (index > 0) Box(Modifier.width(1.dp).height(42.dp).background(MaterialTheme.colorScheme.outline))
+            val isSelected = selected == option.second
+            Box(
+                Modifier.weight(1f).heightIn(min = 42.dp)
+                    .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)
+                    .clickable { onSelect(option.second) }
+                    .padding(horizontal = 8.dp, vertical = 7.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text((if (isSelected) "✓  " else "") + option.first,
+                    textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge,
+                    color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionSegmentGroup(
+    firstLabel: String,
+    secondLabel: String,
+    onFirst: () -> Unit,
+    onSecond: () -> Unit,
+    secondEnabled: Boolean
+) {
+    val shape = RoundedCornerShape(8.dp)
+    Row(
+        Modifier.fillMaxWidth().clip(shape).border(1.dp, MaterialTheme.colorScheme.outline, shape),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.weight(1f).heightIn(min = 48.dp).background(MaterialTheme.colorScheme.primary)
+                .clickable { onFirst() }.padding(horizontal = 8.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(firstLabel, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimary, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+        Box(Modifier.width(1.dp).height(48.dp).background(MaterialTheme.colorScheme.outline))
+        Box(
+            Modifier.weight(1.4f).heightIn(min = 48.dp)
+                .background(if (secondEnabled) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(enabled = secondEnabled) { onSecond() }.padding(horizontal = 8.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(secondLabel, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge,
+                color = if (secondEnabled) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+    }
 }
 
 @Composable
@@ -640,118 +894,227 @@ private fun TripForm(defaultRate: Double, onDismiss: () -> Unit, onSave: (Trip) 
     var receiver by remember { mutableStateOf("") }
     var vehicle by remember { mutableStateOf("") }
     var rate by remember { mutableStateOf(defaultRate.toString()) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Новый рейс") },
-        text = {
-            Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
-                FormField("Откуда", from) { from = it }
-                FormField("Куда", to) { to = it }
-                FormField("Груз", cargo) { cargo = it }
-                FormField("Номер накладной", waybill) { waybill = it }
-                FormField("Отправитель", sender) { sender = it }
-                FormField("Получатель", receiver) { receiver = it }
-                FormField("Автомобиль / госномер", vehicle) { vehicle = it }
-                FormField("Ставка, ₽ за км (оба типа пробега)", rate) { rate = it }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(Modifier.fillMaxSize().imePadding()) {
+                Row(
+                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(horizontal = 6.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onDismiss) { Icon(Icons.Default.ArrowBack, contentDescription = "Назад") }
+                    Text("Новый рейс", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                }
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Создать рейс", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("Заполните основные данные поездки", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Text("Маршрут", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            FormField("Откуда · обязательно", from) { from = it }
+                            FormField("Куда · обязательно", to) { to = it }
+                        }
+                    }
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Text("Груз и накладная", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            FormField("Груз", cargo) { cargo = it }
+                            FormField("Номер накладной", waybill) { waybill = it }
+                        }
+                    }
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Text("Участники", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            FormField("Отправитель", sender) { sender = it }
+                            FormField("Получатель", receiver) { receiver = it }
+                        }
+                    }
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Text("Автомобиль и оплата", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            FormField("Автомобиль / госномер", vehicle) { vehicle = it }
+                            FormField("Ставка, ₽ за километр", rate) { rate = it }
+                            Text("Одна ставка применяется для пробега с грузом и без груза",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                BoxWithConstraints {
+                    val stackedActions = maxWidth < 340.dp
+                    if (stackedActions) {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilledTonalButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Отмена") }
+                            Button(onClick = {
+                                onSave(Trip(fromPlace = from.trim(), toPlace = to.trim(), cargo = cargo.trim(),
+                                    waybill = waybill.trim(), sender = sender.trim(), receiver = receiver.trim(),
+                                    vehicle = vehicle.trim(), ratePerKm = rate.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: defaultRate))
+                            }, enabled = from.isNotBlank() && to.isNotBlank(), modifier = Modifier.fillMaxWidth()) {
+                                Text("Сохранить рейс")
+                            }
+                        }
+                    } else {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            FilledTonalButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Отмена") }
+                            Button(onClick = {
+                                onSave(Trip(fromPlace = from.trim(), toPlace = to.trim(), cargo = cargo.trim(),
+                                    waybill = waybill.trim(), sender = sender.trim(), receiver = receiver.trim(),
+                                    vehicle = vehicle.trim(), ratePerKm = rate.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: defaultRate))
+                            }, enabled = from.isNotBlank() && to.isNotBlank(), modifier = Modifier.weight(1.35f)) {
+                                Text("Сохранить рейс", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onSave(Trip(fromPlace = from.trim(), toPlace = to.trim(), cargo = cargo.trim(),
-                    waybill = waybill.trim(), sender = sender.trim(), receiver = receiver.trim(),
-                    vehicle = vehicle.trim(), ratePerKm = rate.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: defaultRate))
-            }, enabled = from.isNotBlank() && to.isNotBlank()) { Text("Сохранить") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
-    )
+        }
+    }
 }
 
 @Composable
-private fun DailyLogForm(onDismiss: () -> Unit, onSave: (Double, Double, String, String) -> Unit) {
+private fun DailyLogForm(trip: Trip, onDismiss: () -> Unit, onSave: (Double, Double, String, String) -> Unit) {
     var km by remember { mutableStateOf("") }
     var hours by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
-    var mileageType by remember { mutableStateOf("LOADED") }
+    var mileageType by remember { mutableStateOf(TrackingService.TYPE_LOADED) }
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         title = { Text("Пробег за день") },
         text = {
-            Column {
-                FormField("Километры", km) { km = it }
-                FormField("Часы в дороге", hours) { hours = it }
-                Text("Тип пробега", fontWeight = FontWeight.SemiBold)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = mileageType == "LOADED", onClick = { mileageType = "LOADED" })
-                    Text("С грузом")
-                    Spacer(Modifier.width(12.dp))
-                    RadioButton(selected = mileageType == "EMPTY", onClick = { mileageType = "EMPTY" })
-                    Text("Без груза")
+            Column(Modifier.fillMaxWidth().heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text("Рейс " + trip.fromPlace + " → " + trip.toPlace, fontWeight = FontWeight.SemiBold)
+                        Text("Запись будет добавлена за сегодня", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
-                FormField("Комментарий", note) { note = it }
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.padding(12.dp)) {
+                        FormField("Километры", km) { km = it }
+                        FormField("Часы в дороге", hours) { hours = it }
+                        Text("Тип пробега", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 6.dp, bottom = 6.dp))
+                        SegmentedChoiceGroup(
+                            options = listOf("С грузом" to TrackingService.TYPE_LOADED, "Без груза" to TrackingService.TYPE_EMPTY),
+                            selected = mileageType,
+                            onSelect = { mileageType = it }
+                        )
+                        FormField("Комментарий", note) { note = it }
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                onSave(km.replace(',', '.').toDoubleOrNull() ?: 0.0,
-                    hours.replace(',', '.').toDoubleOrNull() ?: 0.0, note, mileageType)
-            }, enabled = (km.replace(',', '.').toDoubleOrNull() ?: 0.0) >= 0) { Text("Сохранить") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(onClick = onDismiss) { Text("Отмена") }
+                Button(onClick = {
+                    onSave(km.replace(',', '.').toDoubleOrNull() ?: 0.0,
+                        hours.replace(',', '.').toDoubleOrNull() ?: 0.0, note, mileageType)
+                }, enabled = (km.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0) { Text("Сохранить") }
+            }
+        }
     )
 }
 
 @Composable
 private fun SettingsDialog(
     currentRate: String,
+    currentTheme: String,
     automaticBackupEnabled: Boolean,
     lastAutomaticBackupAt: Long,
     onDismiss: () -> Unit,
     onBackup: () -> Unit,
     onRestore: () -> Unit,
-    onSave: (String, Boolean) -> Unit
+    onSave: (String, Boolean, String) -> Unit
 ) {
     var rate by remember(currentRate) { mutableStateOf(currentRate) }
+    var selectedTheme by remember(currentTheme) { mutableStateOf(currentTheme) }
     var automaticBackup by remember(automaticBackupEnabled) { mutableStateOf(automaticBackupEnabled) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Настройки оплаты") },
+        containerColor = MaterialTheme.colorScheme.surface,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        title = { Text("Настройки приложения") },
         text = {
-            Column {
-                Text("Ставка по умолчанию применяется к новым рейсам. Для отдельного рейса её можно изменить перед стартом.")
-                Spacer(Modifier.height(10.dp))
-                FormField("Ставка, ₽ за километр", rate) { rate = it }
-                Spacer(Modifier.height(16.dp))
-                Text("Резервное копирование", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Сохраните рейсы, GPS-треки, начисления, остановки, настройки и вложенные документы в один ZIP-архив.", style = MaterialTheme.typography.bodySmall)
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onBackup, modifier = Modifier.weight(1f)) { Text("Создать копию") }
-                    OutlinedButton(onClick = onRestore, modifier = Modifier.weight(1f)) { Text("Восстановить") }
-                }
-                Spacer(Modifier.height(14.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Автоматическая копия каждый день", fontWeight = FontWeight.SemiBold)
-                        Text("Хранится до 7 последних копий в памяти приложения", style = MaterialTheme.typography.bodySmall)
+            Column(Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Тема приложения", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        SegmentedChoiceGroup(
+                            options = listOf("Системная" to "SYSTEM", "Светлая" to "LIGHT", "Тёмная" to "DARK"),
+                            selected = selectedTheme,
+                            onSelect = { selectedTheme = it }
+                        )
                     }
-                    Switch(checked = automaticBackup, onCheckedChange = { automaticBackup = it })
                 }
-                if (lastAutomaticBackupAt > 0L) {
-                    Text("Последняя копия: " + SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(lastAutomaticBackupAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-                } else {
-                    Text("Автоматическая копия ещё не создавалась", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text("Ставка по умолчанию", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text("Применяется к новым рейсам. Для отдельного рейса ставку можно изменить перед стартом.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        FormField("Ставка, ₽ за километр", rate) { rate = it }
+                    }
                 }
-                Text("Копия создаётся без интернета. Для защиты при потере телефона периодически сохраняйте ZIP вручную в облако или на компьютер.", style = MaterialTheme.typography.bodySmall)
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("Резервное копирование", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text("Сохраните рейсы, GPS-треки, начисления, остановки, настройки и документы в ZIP-архив.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            if (maxWidth < 360.dp) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                    Button(onClick = onBackup, modifier = Modifier.fillMaxWidth()) { Text("Создать копию") }
+                                    FilledTonalButton(onClick = onRestore, modifier = Modifier.fillMaxWidth()) { Text("Восстановить из архива") }
+                                }
+                            } else {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                    Button(onClick = onBackup, modifier = Modifier.weight(1f)) { Text("Создать копию") }
+                                    FilledTonalButton(onClick = onRestore, modifier = Modifier.weight(1f)) { Text("Из архива") }
+                                }
+                            }
+                        }
+                    }
+                }
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Автоматическая копия", fontWeight = FontWeight.SemiBold)
+                                Text("Каждый день · хранится до 7 копий", style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = automaticBackup, onCheckedChange = { automaticBackup = it })
+                        }
+                        Text(if (lastAutomaticBackupAt > 0L)
+                            "Последняя копия · " + SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(lastAutomaticBackupAt))
+                        else "Автоматическая копия ещё не создавалась",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Копия создаётся без интернета. ZIP можно сохранить в облако или на компьютер.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(rate, automaticBackup) }, enabled = (rate.replace(',', '.').toFloatOrNull() ?: -1f) >= 0) { Text("Сохранить") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(onClick = onDismiss) { Text("Отмена") }
+                Button(onClick = { onSave(rate, automaticBackup, selectedTheme) },
+                    enabled = (rate.replace(',', '.').toFloatOrNull() ?: -1f) >= 0) { Text("Сохранить") }
+            }
+        }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FinanceReport(
     logs: List<DailyLog>, fuelEntries: List<FuelEntry>, expenses: List<ExpenseEntry>, trips: List<Trip>,
@@ -765,10 +1128,9 @@ private fun FinanceReport(
         "Месяц" -> Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
         else -> 0L
     }
-    // GPS rows are authoritative for a trip/day/load-type group. A manual row in the same group is
-    // ignored to prevent double counting when a driver also enters the odometer total manually.
     val gpsGroups = logs.filter { it.note.startsWith("GPS ·") }.map { Triple(it.tripId, dayBucket(it.dayStart), it.mileageType) }.toSet()
-    val filtered = logs.filter { it.dayStart in start..now && (it.note.startsWith("GPS ·") || Triple(it.tripId, dayBucket(it.dayStart), it.mileageType) !in gpsGroups) }
+    val filtered = logs.filter { it.dayStart in start..now &&
+        (it.note.startsWith("GPS ·") || Triple(it.tripId, dayBucket(it.dayStart), it.mileageType) !in gpsGroups) }
     val periodFuel = fuelEntries.filter { it.filledAt in start..now }
     val periodExpenses = expenses.filter { it.spentAt in start..now }
     val loadedKm = filtered.filter { it.mileageType == "LOADED" }.sumOf { it.km }
@@ -780,47 +1142,101 @@ private fun FinanceReport(
     val allCost = fuelCost + otherCost
     val profit = income - allCost
     val currency = remember { NumberFormat.getCurrencyInstance(Locale("ru", "RU")) }
-    Column(modifier.fillMaxSize().padding(16.dp)) {
-        Text("Финансовый отчёт", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-            listOf("Сегодня", "Неделя", "Месяц", "Всё время").forEach { item -> FilterChip(selected = period == item, onClick = { period = item }, label = { Text(item) }) }
-        }
-        Spacer(Modifier.height(10.dp))
-        Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
-            Text("Чистый результат", color = MaterialTheme.colorScheme.secondary)
-            Text(currency.format(profit), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = if (profit >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
-            Spacer(Modifier.height(12.dp))
-            FinanceLine("Начислено за пробег", currency.format(income))
-            FinanceLine("Топливо (${"%.1f".format(periodFuel.sumOf { it.liters })} л)", "− ${currency.format(fuelCost)}")
-            FinanceLine("Другие расходы", "− ${currency.format(otherCost)}")
-            Divider(Modifier.padding(vertical = 8.dp))
-            FinanceLine("Всего расходов", currency.format(allCost))
-            FinanceLine("Пробег", "%.1f км".format(totalKm))
-            FinanceLine("С грузом / без груза", "%.1f / %.1f км".format(loadedKm, emptyKm))
-            FinanceLine("Прибыль на 1 км", if (totalKm > 0) currency.format(profit / totalKm) else "—")
-            FinanceLine("Расходы на 1 км", if (totalKm > 0) currency.format(allCost / totalKm) else "—")
-        } }
-        Spacer(Modifier.height(14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Другие расходы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Button(onClick = onAddExpense) { Text("Добавить +") }
-        }
-        if (periodExpenses.isEmpty()) Text("Платные дороги, стоянки, ремонт и прочие расходы появятся здесь после добавления.", color = MaterialTheme.colorScheme.secondary)
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f, fill = false)) {
-            items(periodExpenses, key = { it.id }) { item ->
-                Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) { Text(item.category, fontWeight = FontWeight.SemiBold); Text(date(item.spentAt), style = MaterialTheme.typography.bodySmall); if (item.description.isNotBlank()) Text(item.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary); val trip = trips.firstOrNull { it.id == item.tripId }; if (trip != null) Text("${trip.fromPlace} → ${trip.toPlace}", style = MaterialTheme.typography.labelSmall) }
-                    Text(currency.format(item.amount), fontWeight = FontWeight.Bold)
-                } }
+    val history = filtered.groupBy { Triple(it.dayStart, it.mileageType, it.ratePerKm) }.values
+        .map { rows -> rows.first().copy(km = rows.sumOf { it.km }) }.sortedByDescending { it.dayStart }
+
+    BoxWithConstraints(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        val pagePadding = if (maxWidth < 360.dp) 12.dp else 16.dp
+        LazyColumn(modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp),
+            contentPadding = PaddingValues(horizontal = pagePadding, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item { Text("Финансовый отчёт", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+            item {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    if (maxWidth < 380.dp) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                                FilterChip(selected = period == "Сегодня", onClick = { period = "Сегодня" },
+                                    label = { Text("Сегодня") }, modifier = Modifier.weight(1f))
+                                FilterChip(selected = period == "Неделя", onClick = { period = "Неделя" },
+                                    label = { Text("Неделя") }, modifier = Modifier.weight(1f))
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                                FilterChip(selected = period == "Месяц", onClick = { period = "Месяц" },
+                                    label = { Text("Месяц") }, modifier = Modifier.weight(1f))
+                                FilterChip(selected = period == "Всё время", onClick = { period = "Всё время" },
+                                    label = { Text("Всё время") }, modifier = Modifier.weight(1f))
+                            }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                            listOf("Сегодня", "Неделя", "Месяц", "Всё время").forEach { item ->
+                                FilterChip(selected = period == item, onClick = { period = item }, label = { Text(item) })
+                            }
+                        }
+                    }
+                }
             }
-        }
-        Spacer(Modifier.height(10.dp))
-        Text("Начисления по пробегу", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        val history = filtered.groupBy { Triple(it.dayStart, it.mileageType, it.ratePerKm) }.values.map { rows -> rows.first().copy(km = rows.sumOf { it.km }) }.sortedByDescending { it.dayStart }
-        if (history.isEmpty()) Text("За период нет записей пробега.", color = MaterialTheme.colorScheme.secondary)
-        else LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f, fill = false)) {
-            items(history, key = { it.id }) { log -> Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(date(log.dayStart)); Text(if (log.mileageType == "EMPTY") "Без груза · %.1f км".format(log.km) else "С грузом · %.1f км".format(log.km), style = MaterialTheme.typography.bodySmall) }; Text(currency.format(log.km * log.ratePerKm), fontWeight = FontWeight.Bold) } } }
+            item {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Чистый результат", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(currency.format(profit), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(10.dp))
+                        FinanceLine("Начислено за пробег", currency.format(income))
+                        FinanceLine("Топливо · %.1f л".format(periodFuel.sumOf { it.liters }), "− " + currency.format(fuelCost))
+                        FinanceLine("Другие расходы", "− " + currency.format(otherCost))
+                        Divider(Modifier.padding(vertical = 6.dp))
+                        FinanceLine("Всего расходов", currency.format(allCost))
+                        FinanceLine("Пробег", "%.1f км".format(totalKm))
+                        FinanceLine("С грузом / без груза", "%.1f / %.1f км".format(loadedKm, emptyKm))
+                        FinanceLine("Прибыль на 1 км", if (totalKm > 0) currency.format(profit / totalKm) else "—")
+                    }
+                }
+            }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text("Другие расходы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    SmallFloatingActionButton(onClick = onAddExpense) { Icon(Icons.Default.Add, contentDescription = "Добавить расход") }
+                }
+            }
+            if (periodExpenses.isEmpty()) item {
+                Text("Платные дороги, стоянки и другие расходы появятся здесь после добавления.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            items(periodExpenses, key = { "expense-" + it.id }) { item ->
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(item.category, fontWeight = FontWeight.SemiBold)
+                            Text(date(item.spentAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (item.description.isNotBlank()) Text(item.description, style = MaterialTheme.typography.bodySmall)
+                            trips.firstOrNull { it.id == item.tripId }?.let {
+                                Text(it.fromPlace + " → " + it.toPlace, style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(currency.format(item.amount), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
+                    }
+                }
+            }
+            item { Text("Начисления по пробегу", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            if (history.isEmpty()) item {
+                Text("За период нет записей пробега.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            items(history, key = { "mileage-" + it.id + "-" + it.dayStart }) { log ->
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(date(log.dayStart), fontWeight = FontWeight.SemiBold)
+                            Text((if (log.mileageType == "EMPTY") "Без груза" else "С грузом") + " · %.1f км".format(log.km),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text(currency.format(log.km * log.ratePerKm), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
+                    }
+                }
+            }
         }
     }
 }
@@ -829,7 +1245,13 @@ private fun dayBucket(timestamp: Long): Long = Calendar.getInstance().apply { ti
 
 @Composable
 private fun FinanceLine(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(label, color = MaterialTheme.colorScheme.secondary); Text(value, fontWeight = FontWeight.SemiBold) }
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f),
+            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        Spacer(Modifier.width(10.dp))
+        Text(value, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), textAlign = TextAlign.End,
+            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+    }
 }
 
 @Composable
@@ -840,69 +1262,255 @@ private fun ExpenseEntryDialog(trips: List<Trip>, onDismiss: () -> Unit, onSave:
     var description by remember { mutableStateOf("") }
     var tripId by remember { mutableStateOf<Long?>(null) }
     val parsed = amount.replace(',', '.').toDoubleOrNull()
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Новый расход") }, text = {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
-            Text("Категория", style = MaterialTheme.typography.labelLarge)
-            categories.forEach { item -> Row(verticalAlignment = Alignment.CenterVertically) { RadioButton(selected = category == item, onClick = { category = item }); Text(item) } }
-            FormField("Сумма, ₽", amount) { amount = it }
-            FormField("Описание / комментарий", description) { description = it }
-            Text("Рейс (необязательно)", style = MaterialTheme.typography.labelLarge)
-            TextButton(onClick = { tripId = null }) { Text(if (tripId == null) "✓ Без привязки" else "Без привязки") }
-            trips.take(5).forEach { trip -> TextButton(onClick = { tripId = trip.id }) { Text("${if (tripId == trip.id) "✓ " else ""}${trip.fromPlace} → ${trip.toPlace}") } }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        title = { Text("Новый расход") },
+        text = {
+            Column(Modifier.fillMaxWidth().heightIn(max = 500.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Категория", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                        CategorySelection(categories = categories, selected = category, onSelect = { category = it })
+                        FormField("Сумма, ₽", amount) { amount = it }
+                        FormField("Описание / комментарий", description) { description = it }
+                    }
+                }
+                TripAssociationSelector(trips = trips, selectedTripId = tripId, onSelect = { tripId = it },
+                    title = "Рейс (необязательно)")
+            }
+        },
+        confirmButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(onClick = onDismiss) { Text("Отмена") }
+                Button(onClick = {
+                    if (parsed != null && parsed > 0) onSave(ExpenseEntry(tripId = tripId, category = category, amount = parsed, description = description))
+                }, enabled = parsed != null && parsed > 0) { Text("Сохранить") }
+            }
         }
-    }, confirmButton = { TextButton(onClick = { if (parsed != null && parsed > 0) onSave(ExpenseEntry(tripId = tripId, category = category, amount = parsed, description = description)) }, enabled = parsed != null && parsed > 0) { Text("Сохранить") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } })
+    )
+}
+
+@Composable
+private fun CategorySelection(categories: List<String>, selected: String, onSelect: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        categories.chunked(2).forEach { rowItems ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                rowItems.forEach { item ->
+                    val isSelected = selected == item
+                    Card(
+                        onClick = { onSelect(item) },
+                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                        colors = CardDefaults.cardColors(containerColor =
+                            if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                        )
+                    ) {
+                        Box(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 9.dp), contentAlignment = Alignment.Center) {
+                            Text(item, textAlign = TextAlign.Center, maxLines = 2,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+                if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun TripAssociationSelector(
+    trips: List<Trip>,
+    selectedTripId: Long?,
+    onSelect: (Long?) -> Unit,
+    title: String
+) {
+    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            val options = listOf<Pair<String, Long?>>( "Без привязки" to null ) +
+                trips.take(5).map { (it.fromPlace + " → " + it.toPlace) to it.id }
+            options.forEach { option ->
+                val isSelected = selectedTripId == option.second
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                        .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)
+                        .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                        .clickable { onSelect(option.second) }.padding(horizontal = 10.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(if (isSelected) "✓" else "○", color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.width(24.dp), style = MaterialTheme.typography.titleSmall)
+                    Text(option.first, color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f), maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
 }
 
 @Composable
 private fun FuelEntryDialog(trips: List<Trip>, onDismiss: () -> Unit, onSave: (FuelEntry) -> Unit) {
+    val stations = listOf("Роснефть", "Газпром", "ГазпромНефть", "Лукойл", "Татнефть")
     var liters by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var odometer by remember { mutableStateOf("") }
     var station by remember { mutableStateOf("") }
+    var stationExpanded by remember { mutableStateOf(false) }
     var fuelType by remember { mutableStateOf("Дизель") }
     var tripId by remember { mutableStateOf<Long?>(null) }
     val total = (liters.replace(',', '.').toDoubleOrNull() ?: 0.0) * (price.replace(',', '.').toDoubleOrNull() ?: 0.0)
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Добавить заправку") }, text = {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
-            FormField("Количество, литров", liters) { liters = it }
-            FormField("Цена за литр, ₽", price) { price = it }
-            FormField("Пробег одометра, км", odometer) { odometer = it }
-            FormField("АЗС / место", station) { station = it }
-            Text("Тип топлива: $fuelType")
-            Row { TextButton(onClick = { fuelType = "Дизель" }) { Text("Дизель") }; TextButton(onClick = { fuelType = "Другое" }) { Text("Другое") } }
-            Text("Привязка к рейсу", style = MaterialTheme.typography.labelLarge)
-            TextButton(onClick = { tripId = null }) { Text("Без привязки") }
-            trips.take(5).forEach { trip -> TextButton(onClick = { tripId = trip.id }) { Text("${if (tripId == trip.id) "✓ " else ""}${trip.fromPlace} → ${trip.toPlace}") } }
-            Text("Итого: ${"%.2f".format(total)} ₽", fontWeight = FontWeight.Bold)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        title = { Text("Добавить заправку") },
+        text = {
+            Column(Modifier.fillMaxWidth().heightIn(max = 500.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                        FormField("Количество, литров", liters) { liters = it }
+                        FormField("Цена за литр, ₽", price) { price = it }
+                        FormField("Пробег одометра, км", odometer) { odometer = it }
+                    }
+                }
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("Заправка", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                        Box(Modifier.fillMaxWidth()) {
+                            OutlinedButton(onClick = { stationExpanded = true }, modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)) {
+                                Text(if (station.isBlank()) "Выбрать АЗС" else station, modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Start, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text("⌄", color = MaterialTheme.colorScheme.primary)
+                            }
+                            DropdownMenu(expanded = stationExpanded, onDismissRequest = { stationExpanded = false }) {
+                                stations.forEach { item ->
+                                    DropdownMenuItem(text = { Text(item) }, onClick = { station = item; stationExpanded = false })
+                                }
+                            }
+                        }
+                        Text("Тип топлива", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 2.dp))
+                        SegmentedChoiceGroup(
+                            options = listOf("Дизель" to "Дизель", "Другое" to "Другое"),
+                            selected = fuelType,
+                            onSelect = { fuelType = it }
+                        )
+                    }
+                }
+                TripAssociationSelector(trips = trips, selectedTripId = tripId, onSelect = { tripId = it }, title = "Привязка к рейсу")
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Итого", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                        Text("%.2f ₽".format(total), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            val l = liters.replace(',', '.').toDoubleOrNull() ?: 0.0
+            val pr = price.replace(',', '.').toDoubleOrNull() ?: -1.0
+            val odo = odometer.replace(',', '.').toDoubleOrNull() ?: -1.0
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(onClick = onDismiss) { Text("Отмена") }
+                Button(onClick = { onSave(FuelEntry(tripId = tripId, liters = l, pricePerLiter = pr,
+                    odometerKm = odo, station = station, fuelType = fuelType)) },
+                    enabled = l > 0 && pr >= 0 && odo >= 0) { Text("Сохранить") }
+            }
         }
-    }, confirmButton = { TextButton(onClick = {
-        val l = liters.replace(',', '.').toDoubleOrNull() ?: 0.0
-        val pr = price.replace(',', '.').toDoubleOrNull() ?: 0.0
-        val odo = odometer.replace(',', '.').toDoubleOrNull() ?: 0.0
-        if (l > 0 && pr >= 0 && odo >= 0) onSave(FuelEntry(tripId = tripId, liters = l, pricePerLiter = pr, odometerKm = odo, station = station, fuelType = fuelType))
-    }, enabled = (liters.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0 && (price.replace(',', '.').toDoubleOrNull() ?: -1.0) >= 0 && (odometer.replace(',', '.').toDoubleOrNull() ?: -1.0) >= 0) { Text("Сохранить") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } })
+    )
 }
 
 @Composable
 private fun FuelReport(entries: List<FuelEntry>, trips: List<Trip>, onAdd: () -> Unit, modifier: Modifier = Modifier) {
-    val totalLiters = entries.sumOf { it.liters }; val totalCost = entries.sumOf { it.totalCost }
+    val totalLiters = entries.sumOf { it.liters }
+    val totalCost = entries.sumOf { it.totalCost }
     val ordered = entries.sortedBy { it.odometerKm }
     val distance = if (ordered.size >= 2) (ordered.last().odometerKm - ordered.first().odometerKm).coerceAtLeast(0.0) else 0.0
     val consumption = if (distance > 0) totalLiters * 100.0 / distance else 0.0
-    Column(modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Учёт топлива", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); Button(onClick = onAdd) { Text("Заправка +") } }
-        Spacer(Modifier.height(12.dp))
-        Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
-            Text("Расходы на топливо", color = MaterialTheme.colorScheme.secondary)
-            Text("%.2f ₽".format(totalCost), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text("%.1f л · %.2f ₽/л в среднем".format(totalLiters, if (totalLiters > 0) totalCost / totalLiters else 0.0))
-            Text(if (distance > 0) "Средний расход: %.1f л/100 км".format(consumption) else "Для расчёта расхода нужны минимум две заправки с разным пробегом одометра", style = MaterialTheme.typography.bodySmall)
-        } }
-        Spacer(Modifier.height(12.dp)); Text("История заправок", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        if (entries.isEmpty()) Text("Пока нет заправок. Добавьте первую запись.", color = MaterialTheme.colorScheme.secondary)
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(entries, key = { it.id }) { entry ->
-            Card(Modifier.fillMaxWidth()) { Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(date(entry.filledAt), fontWeight = FontWeight.SemiBold); Text("${entry.station.ifBlank { "АЗС не указана" }} · ${entry.fuelType}"); Text("%.1f л × %.2f ₽ · одометр %.0f км".format(entry.liters, entry.pricePerLiter, entry.odometerKm), style = MaterialTheme.typography.bodySmall) }; Text("%.2f ₽".format(entry.totalCost), fontWeight = FontWeight.Bold) } }
-        } }
+
+    BoxWithConstraints(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        val horizontalPadding = if (maxWidth < 360.dp) 12.dp else 16.dp
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp),
+            contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Учёт топлива", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("Заправки и расход по пробегу", style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    SmallFloatingActionButton(
+                        onClick = onAdd,
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        shape = CircleShape
+                    ) { Icon(Icons.Default.Add, contentDescription = "Добавить заправку") }
+                }
+            }
+            item {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text("Расходы на топливо", style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("%.2f ₽".format(totalCost), style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("%.1f л · %.2f ₽/л в среднем".format(totalLiters,
+                            if (totalLiters > 0) totalCost / totalLiters else 0.0),
+                            color = MaterialTheme.colorScheme.onSurface)
+                        Divider(Modifier.padding(vertical = 4.dp))
+                        Text(if (distance > 0) "Средний расход · %.1f л/100 км".format(consumption)
+                            else "Для расчёта среднего расхода нужны две заправки с разным пробегом",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            item { Text("История заправок", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            if (entries.isEmpty()) item {
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Text("Пока нет заправок. Добавьте первую запись.", Modifier.fillMaxWidth().padding(16.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            items(entries.sortedByDescending { it.filledAt }, key = { it.id }) { entry ->
+                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(date(entry.filledAt), fontWeight = FontWeight.SemiBold)
+                            Text(entry.station.ifBlank { "АЗС не указана" } + " · " + entry.fuelType,
+                                color = MaterialTheme.colorScheme.onSurface)
+                            Text("%.1f л × %.2f ₽ · одометр %.0f км".format(entry.liters, entry.pricePerLiter, entry.odometerKm),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            trips.firstOrNull { it.id == entry.tripId }?.let {
+                                Text(it.fromPlace + " → " + it.toPlace, style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text("%.2f ₽".format(entry.totalCost), fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.End)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -911,6 +1519,7 @@ private fun FormField(label: String, value: String, onChange: (String) -> Unit) 
     OutlinedTextField(value, onChange, label = { Text(label) },
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), singleLine = true)
 }
+
 
 private fun date(time: Long): String =
     SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(time))
