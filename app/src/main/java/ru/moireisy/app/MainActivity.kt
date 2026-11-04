@@ -98,19 +98,19 @@ fun MoiReisyApp() {
 
     MaterialTheme(
         colorScheme = lightColorScheme(
-            primary = Color(0xFF1769E0),
+            primary = Color(0xFF1769D2),
             onPrimary = Color.White,
             primaryContainer = Color(0xFFE7F0FF),
             onPrimaryContainer = Color(0xFF123B78),
-            secondary = Color(0xFF00A6A6),
+            secondary = Color(0xFF718096),
             onSecondary = Color.White,
             tertiary = Color(0xFFF59E0B),
-            background = Color(0xFFF4F7FB),
-            onBackground = Color(0xFF172B4D),
+            background = Color(0xFFF1F5FA),
+            onBackground = Color(0xFF183153),
             surface = Color.White,
-            onSurface = Color(0xFF172B4D),
+            onSurface = Color(0xFF183153),
             surfaceVariant = Color(0xFFEAF0F8),
-            onSurfaceVariant = Color(0xFF64748B),
+            onSurfaceVariant = Color(0xFF718096),
             outline = Color(0xFFDCE5F0),
             error = Color(0xFFDC4545)
         )
@@ -403,15 +403,15 @@ fun MoiReisyApp() {
                 title = { Text("Восстановить резервную копию?") },
                 text = { Text("Текущие данные приложения будут заменены данными из архива. Перед продолжением убедитесь, что у вас есть свежая резервная копия текущих данных.") },
                 confirmButton = {
-                    TextButton(onClick = {
+                    Button(onClick = {
                         pendingRestoreUri = null
                         scope.launch {
                             try { BackupManager.restore(context, restoreUri); Toast.makeText(context, "Данные восстановлены. Перезапустите приложение.", Toast.LENGTH_LONG).show() }
                             catch (e: Exception) { Toast.makeText(context, "Ошибка восстановления: ${e.message}", Toast.LENGTH_LONG).show() }
                         }
-                    }) { Text("Восстановить") }
+                    }) { Text("Восстановить", color = Color.White, maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp)) }
                 },
-                dismissButton = { TextButton(onClick = { pendingRestoreUri = null }) { Text("Отмена") } }
+                dismissButton = { Button(onClick = { pendingRestoreUri = null }) { Text("Отмена") } }
             )
         }
     }
@@ -827,7 +827,7 @@ private fun TripDetails(
                         Text(trip.cargo.ifBlank { "Не указан" },
                             style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp),
                             fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
-                            overflow = TextOverflow.Clip)
+                            overflow = TextOverflow.Ellipsis)
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Состояние", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -839,7 +839,7 @@ private fun TripDetails(
                         }
                     }
                 }
-                OutlinedButton(
+                Button(
                     onClick = {
                         val next = if (selectedMileageType == TrackingService.TYPE_LOADED) TrackingService.TYPE_EMPTY else TrackingService.TYPE_LOADED
                         selectedMileageType = next
@@ -912,10 +912,10 @@ private fun TripDetails(
                             Icon(Icons.Default.PlayArrow, null); Text(" Продолжить", maxLines = 1)
                         }
                     } else {
-                        OutlinedButton(onClick = { showPauseDialog = true }, modifier = Modifier.weight(1f)) { Text("Пауза") }
+                        Button(onClick = { showPauseDialog = true }, modifier = Modifier.weight(1f)) { Text("Пауза") }
                     }
                     if (activeTripId == trip.id) {
-                        OutlinedButton(onClick = onStop) { Icon(Icons.Default.Stop, null); Text(" Стоп") }
+                        Button(onClick = onStop) { Icon(Icons.Default.Stop, null); Text(" Стоп") }
                     }
                 }
             }
@@ -932,7 +932,7 @@ private fun TripDetails(
                 InfoLine("Автомобиль", trip.vehicle)
                 InfoLine("Ставка оплаты", "%.2f ₽/км".format(trip.ratePerKm))
                 InfoLine("Начислено по рейсу", currency.format(earned))
-                OutlinedButton(onClick = onAddLog, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = onAddLog, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Add, null); Text(" Добавить дневной пробег")
                 }
             }
@@ -949,8 +949,8 @@ private fun TripDetails(
                         }
                     }
                 } },
-                confirmButton = { TextButton(onClick = { onPause(pauseReason); showPauseDialog = false }) { Text("Начать паузу") } },
-                dismissButton = { TextButton(onClick = { showPauseDialog = false }) { Text("Отмена") } })
+                confirmButton = { Button(onClick = { onPause(pauseReason); showPauseDialog = false }) { Text("Начать паузу") } },
+                dismissButton = { Button(onClick = { showPauseDialog = false }) { Text("Отмена") } })
         }
 
         Text("Пробег по дням", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -1000,7 +1000,7 @@ private fun TripDetails(
             shape = RoundedCornerShape(50.dp), colors = ButtonDefaults.buttonColors(containerColor = blue)) {
             Text("Завершить рейс", maxLines = 1)
         }
-        OutlinedButton(onClick = onDelete, modifier = Modifier.fillMaxWidth(),
+        Button(onClick = onDelete, modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
             Icon(Icons.Default.Delete, null); Text(" Удалить рейс")
         }
@@ -1008,7 +1008,7 @@ private fun TripDetails(
             AlertDialog(onDismissRequest = { showFinishDialog = false }, title = { Text("Завершить рейс?") },
                 text = { Text("Рейс будет отмечен как завершённый. Продолжить?") },
                 confirmButton = {
-                    TextButton(onClick = {
+                    Button(onClick = {
                         scope.launch {
                             if (activeTripId == trip.id) onStop()
                             val finalKm = (dao.dailyKmTotal(trip.id)).takeIf { it > 0.0 } ?: trip.totalKm
@@ -1017,7 +1017,7 @@ private fun TripDetails(
                         }
                     }) { Text("Завершить") }
                 },
-                dismissButton = { TextButton(onClick = { showFinishDialog = false }) { Text("Отмена") } })
+                dismissButton = { Button(onClick = { showFinishDialog = false }) { Text("Отмена") } })
         }
     }
 }
@@ -1053,13 +1053,13 @@ private fun TripForm(defaultRate: Double, onDismiss: () -> Unit, onSave: (Trip) 
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            Button(onClick = {
                 onSave(Trip(fromPlace = from.trim(), toPlace = to.trim(), cargo = cargo.trim(),
                     waybill = waybill.trim(), sender = sender.trim(), receiver = receiver.trim(),
                     vehicle = vehicle.trim(), ratePerKm = rate.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: defaultRate))
             }, enabled = from.isNotBlank() && to.isNotBlank()) { Text("Сохранить") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
+        dismissButton = { Button(onClick = onDismiss) { Text("Отмена") } }
     )
 }
 
@@ -1088,12 +1088,12 @@ private fun DailyLogForm(onDismiss: () -> Unit, onSave: (Double, Double, String,
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            Button(onClick = {
                 onSave(km.replace(',', '.').toDoubleOrNull() ?: 0.0,
                     hours.replace(',', '.').toDoubleOrNull() ?: 0.0, note, mileageType)
             }, enabled = (km.replace(',', '.').toDoubleOrNull() ?: 0.0) >= 0) { Text("Сохранить") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
+        dismissButton = { Button(onClick = onDismiss) { Text("Отмена") } }
     )
 }
 
@@ -1122,8 +1122,8 @@ private fun SettingsDialog(
                 Text("Сохраните рейсы, GPS-треки, начисления, остановки, настройки и вложенные документы в один ZIP-архив.", style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onBackup, modifier = Modifier.weight(1f)) { Text("Создать копию") }
-                    OutlinedButton(onClick = onRestore, modifier = Modifier.weight(1f)) { Text("Восстановить") }
+                    Button(onClick = onBackup, modifier = Modifier.weight(1f)) { Text("Создать копию", color = Color.White, maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp)) }
+                    Button(onClick = onRestore, modifier = Modifier.weight(1f)) { Text("Восстановить") }
                 }
                 Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -1142,9 +1142,9 @@ private fun SettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(rate, automaticBackup) }, enabled = (rate.replace(',', '.').toFloatOrNull() ?: -1f) >= 0) { Text("Сохранить") }
+            Button(onClick = { onSave(rate, automaticBackup) }, enabled = (rate.replace(',', '.').toFloatOrNull() ?: -1f) >= 0) { Text("Сохранить") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
+        dismissButton = { Button(onClick = onDismiss) { Text("Отмена") } }
     )
 }
 
@@ -1184,9 +1184,9 @@ private fun FinanceReport(
             listOf("Сегодня", "Неделя", "Месяц", "Всё время").forEach { item -> FilterChip(selected = period == item, onClick = { period = item }, label = { Text(item) }) }
         }
         Spacer(Modifier.height(10.dp))
-        Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
-            Text("Чистый результат", color = MaterialTheme.colorScheme.secondary)
-            Text(currency.format(profit), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = if (profit >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF1769D2)), shape = RoundedCornerShape(20.dp)) { Column(Modifier.padding(16.dp)) {
+            Text("Чистый результат", color = Color.White.copy(alpha = 0.88f))
+            Text(currency.format(profit), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(Modifier.height(12.dp))
             FinanceLine("Начислено за пробег", currency.format(income))
             FinanceLine("Топливо (${"%.1f".format(periodFuel.sumOf { it.liters })} л)", "− ${currency.format(fuelCost)}")
@@ -1201,7 +1201,7 @@ private fun FinanceReport(
         Spacer(Modifier.height(14.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Другие расходы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Button(onClick = onAddExpense) { Text("Добавить +") }
+            Button(onClick = onAddExpense) { Text("Добавить +", color = Color.White, maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp)) }
         }
         if (periodExpenses.isEmpty()) Text("Платные дороги, стоянки, ремонт и прочие расходы появятся здесь после добавления.", color = MaterialTheme.colorScheme.secondary)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f, fill = false)) {
@@ -1244,10 +1244,10 @@ private fun ExpenseEntryDialog(trips: List<Trip>, onDismiss: () -> Unit, onSave:
             FormField("Сумма, ₽", amount) { amount = it }
             FormField("Описание / комментарий", description) { description = it }
             Text("Рейс (необязательно)", style = MaterialTheme.typography.labelLarge)
-            TextButton(onClick = { tripId = null }) { Text(if (tripId == null) "✓ Без привязки" else "Без привязки") }
-            trips.take(5).forEach { trip -> TextButton(onClick = { tripId = trip.id }) { Text("${if (tripId == trip.id) "✓ " else ""}${trip.fromPlace} → ${trip.toPlace}") } }
+            Button(onClick = { tripId = null }) { Text(if (tripId == null) "✓ Без привязки" else "Без привязки") }
+            trips.take(5).forEach { trip -> Button(onClick = { tripId = trip.id }) { Text("${if (tripId == trip.id) "✓ " else ""}${trip.fromPlace} → ${trip.toPlace}") } }
         }
-    }, confirmButton = { TextButton(onClick = { if (parsed != null && parsed > 0) onSave(ExpenseEntry(tripId = tripId, category = category, amount = parsed, description = description)) }, enabled = parsed != null && parsed > 0) { Text("Сохранить") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } })
+    }, confirmButton = { Button(onClick = { if (parsed != null && parsed > 0) onSave(ExpenseEntry(tripId = tripId, category = category, amount = parsed, description = description)) }, enabled = parsed != null && parsed > 0) { Text("Сохранить") } }, dismissButton = { Button(onClick = onDismiss) { Text("Отмена") } })
 }
 
 @Composable
@@ -1266,18 +1266,18 @@ private fun FuelEntryDialog(trips: List<Trip>, onDismiss: () -> Unit, onSave: (F
             FormField("Пробег одометра, км", odometer) { odometer = it }
             FormField("АЗС / место", station) { station = it }
             Text("Тип топлива: $fuelType")
-            Row { TextButton(onClick = { fuelType = "Дизель" }) { Text("Дизель") }; TextButton(onClick = { fuelType = "Другое" }) { Text("Другое") } }
+            Row { Button(onClick = { fuelType = "Дизель" }) { Text("Дизель") }; Button(onClick = { fuelType = "Другое" }) { Text("Другое") } }
             Text("Привязка к рейсу", style = MaterialTheme.typography.labelLarge)
-            TextButton(onClick = { tripId = null }) { Text("Без привязки") }
-            trips.take(5).forEach { trip -> TextButton(onClick = { tripId = trip.id }) { Text("${if (tripId == trip.id) "✓ " else ""}${trip.fromPlace} → ${trip.toPlace}") } }
+            Button(onClick = { tripId = null }) { Text("Без привязки") }
+            trips.take(5).forEach { trip -> Button(onClick = { tripId = trip.id }) { Text("${if (tripId == trip.id) "✓ " else ""}${trip.fromPlace} → ${trip.toPlace}") } }
             Text("Итого: ${"%.2f".format(total)} ₽", fontWeight = FontWeight.Bold)
         }
-    }, confirmButton = { TextButton(onClick = {
+    }, confirmButton = { Button(onClick = {
         val l = liters.replace(',', '.').toDoubleOrNull() ?: 0.0
         val pr = price.replace(',', '.').toDoubleOrNull() ?: 0.0
         val odo = odometer.replace(',', '.').toDoubleOrNull() ?: 0.0
         if (l > 0 && pr >= 0 && odo >= 0) onSave(FuelEntry(tripId = tripId, liters = l, pricePerLiter = pr, odometerKm = odo, station = station, fuelType = fuelType))
-    }, enabled = (liters.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0 && (price.replace(',', '.').toDoubleOrNull() ?: -1.0) >= 0 && (odometer.replace(',', '.').toDoubleOrNull() ?: -1.0) >= 0) { Text("Сохранить") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } })
+    }, enabled = (liters.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0 && (price.replace(',', '.').toDoubleOrNull() ?: -1.0) >= 0 && (odometer.replace(',', '.').toDoubleOrNull() ?: -1.0) >= 0) { Text("Сохранить") } }, dismissButton = { Button(onClick = onDismiss) { Text("Отмена") } })
 }
 
 @Composable
@@ -1287,13 +1287,13 @@ private fun FuelReport(entries: List<FuelEntry>, trips: List<Trip>, onAdd: () ->
     val distance = if (ordered.size >= 2) (ordered.last().odometerKm - ordered.first().odometerKm).coerceAtLeast(0.0) else 0.0
     val consumption = if (distance > 0) totalLiters * 100.0 / distance else 0.0
     Column(modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Учёт топлива", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); Button(onClick = onAdd) { Text("Заправка +") } }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Учёт топлива", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); Button(onClick = onAdd) { Text("Заправка +", color = Color.White, maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp)) } }
         Spacer(Modifier.height(12.dp))
-        Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
-            Text("Расходы на топливо", color = MaterialTheme.colorScheme.secondary)
-            Text("%.2f ₽".format(totalCost), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text("%.1f л · %.2f ₽/л в среднем".format(totalLiters, if (totalLiters > 0) totalCost / totalLiters else 0.0))
-            Text(if (distance > 0) "Средний расход: %.1f л/100 км".format(consumption) else "Для расчёта расхода нужны минимум две заправки с разным пробегом одометра", style = MaterialTheme.typography.bodySmall)
+        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF1769D2)), shape = RoundedCornerShape(20.dp)) { Column(Modifier.padding(16.dp)) {
+            Text("Расходы на топливо", color = Color.White.copy(alpha = 0.88f))
+            Text("%.2f ₽".format(totalCost), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("%.1f л · %.2f ₽/л в среднем".format(totalLiters, if (totalLiters > 0) totalCost / totalLiters else 0.0), color = Color.White, fontWeight = FontWeight.SemiBold)
+            Text(if (distance > 0) "Средний расход: %.1f л/100 км".format(consumption) else "Для расчёта расхода нужны минимум две заправки с разным пробегом одометра", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.88f))
         } }
         Spacer(Modifier.height(12.dp)); Text("История заправок", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         if (entries.isEmpty()) Text("Пока нет заправок. Добавьте первую запись.", color = MaterialTheme.colorScheme.secondary)
