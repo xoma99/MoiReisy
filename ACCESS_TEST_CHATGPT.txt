@@ -1,0 +1,3 @@
+GitHub write-access verification.
+Created by ChatGPT on 2026-11-04 in test/chatgpt-access-check-20261104.
+This file is safe to delete after verification.
