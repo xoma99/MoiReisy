@@ -408,7 +408,7 @@ private fun Dashboard(
         val compact = maxWidth < 380.dp
         val pagePadding = if (compact) 14.dp else 20.dp
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().widthIn(max = 760.dp),
+            modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth(),
             contentPadding = PaddingValues(
                 start = pagePadding,
                 end = pagePadding,
