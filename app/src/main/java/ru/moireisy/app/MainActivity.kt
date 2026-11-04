@@ -755,14 +755,13 @@ private fun TripDetails(
             .getString("mileage_type_${trip.id}", TrackingService.TYPE_LOADED) ?: TrackingService.TYPE_LOADED)
     }
     var showPauseDialog by remember(trip.id) { mutableStateOf(false) }
+    var showFinishDialog by remember(trip.id) { mutableStateOf(false) }
     var pauseReason by remember(trip.id) { mutableStateOf(TrackingService.PAUSE_LOADING) }
     val locationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
         if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
-            onStart(selectedMileageType)
-        }
+            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true) onStart(selectedMileageType)
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
@@ -774,170 +773,254 @@ private fun TripDetails(
             }
         }
     }
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Text("${trip.fromPlace} → ${trip.toPlace}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("Статус: ${trip.status} · ${date(trip.startAt)}", color = MaterialTheme.colorScheme.secondary)
-        Spacer(Modifier.height(16.dp))
-        InfoLine("Груз", trip.cargo)
-        InfoLine("Номер накладной", trip.waybill)
-        InfoLine("Отправитель", trip.sender)
-        InfoLine("Получатель", trip.receiver)
-        InfoLine("Автомобиль", trip.vehicle)
-        InfoLine("Пробег по рейсу", "%.1f км".format(trip.totalKm))
-        InfoLine("Ставка оплаты", "%.2f ₽/км".format(trip.ratePerKm))
-        InfoLine("Начислено по рейсу", NumberFormat.getCurrencyInstance(Locale("ru", "RU")).format(logs.sumOf { it.km * it.ratePerKm }))
-        Spacer(Modifier.height(16.dp))
-        Text("Тип текущего пробега", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            FilterChip(
-                selected = selectedMileageType == TrackingService.TYPE_LOADED,
-                onClick = {
-                    selectedMileageType = TrackingService.TYPE_LOADED
-                    context.getSharedPreferences("settings", 0).edit().putString("mileage_type_${trip.id}", selectedMileageType).apply()
-                    if (activeTripId == trip.id) onChangeType(selectedMileageType)
-                },
-                label = { Text("С грузом") },
-                modifier = Modifier.weight(1f)
-            )
-            FilterChip(
-                selected = selectedMileageType == TrackingService.TYPE_EMPTY,
-                onClick = {
-                    selectedMileageType = TrackingService.TYPE_EMPTY
-                    context.getSharedPreferences("settings", 0).edit().putString("mileage_type_${trip.id}", selectedMileageType).apply()
-                    if (activeTripId == trip.id) onChangeType(selectedMileageType)
-                },
-                label = { Text("Без груза") },
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Text("Ставка: %.2f ₽/км · применяется к выбранному типу".format(trip.ratePerKm),
-            color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodySmall)
-        if (activeTripId == trip.id) {
-            Text(
-                if (isPaused) "Статус GPS: пауза" else "Статус GPS: запись маршрута активна",
-                color = if (isPaused) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (activeTripId != trip.id) {
-                Button(
-                    onClick = {
-                        val permissions = mutableListOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        )
-                        if (Build.VERSION.SDK_INT >= 33) permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-                        locationPermission.launch(permissions.toTypedArray())
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.PlayArrow, null); Text(" GPS")
+    val loadedKm = logs.filter { it.mileageType == TrackingService.TYPE_LOADED }.sumOf { it.km }
+    val emptyKm = logs.filter { it.mileageType == TrackingService.TYPE_EMPTY }.sumOf { it.km }
+    val totalKm = if (logs.isNotEmpty()) loadedKm + emptyKm else trip.totalKm
+    val earned = logs.sumOf { it.km * it.ratePerKm }
+    val currency = NumberFormat.getCurrencyInstance(Locale("ru", "RU"))
+    val blue = Color(0xFF1769D2)
+    val cardShape = RoundedCornerShape(20.dp)
+
+    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Route and cargo card. Cargo/state remain side-by-side; compact single-line cargo text prevents wrapping.
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = cardShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("ТЕКУЩИЙ РЕЙС", style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f))
+                    Surface(color = Color(0xFFD8F3E5), shape = RoundedCornerShape(50)) {
+                        Text(trip.status, color = Color(0xFF16834A), style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp), maxLines = 1)
+                    }
                 }
-            } else if (isPaused) {
-                Button(onClick = { onResume(selectedMileageType) }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.PlayArrow, null); Text(" Продолжить")
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Surface(color = Color(0xFFE8F1FF), shape = RoundedCornerShape(12.dp)) {
+                        Icon(Icons.Default.Map, null, tint = blue, modifier = Modifier.padding(10.dp).size(22.dp))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("ОТКУДА", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(trip.fromPlace, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
-            } else {
-                OutlinedButton(onClick = { showPauseDialog = true }, modifier = Modifier.weight(1f)) {
-                    Text("Пауза")
+                Box(Modifier.padding(start = 20.dp).width(2.dp).height(16.dp).background(MaterialTheme.colorScheme.outline))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Surface(color = Color(0xFFE7F6EF), shape = RoundedCornerShape(12.dp)) {
+                        Icon(Icons.Default.Map, null, tint = Color(0xFF16834A), modifier = Modifier.padding(10.dp).size(22.dp))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("КУДА", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(trip.toPlace, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
-            }
-            OutlinedButton(onClick = onStop, enabled = activeTripId == trip.id, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.Stop, null); Text(" Стоп")
-            }
-        }
-        if (showPauseDialog) {
-            AlertDialog(
-                onDismissRequest = { showPauseDialog = false },
-                title = { Text("Причина остановки") },
-                text = {
-                    Column {
-                        listOf(TrackingService.PAUSE_LOADING, TrackingService.PAUSE_UNLOADING,
-                            TrackingService.PAUSE_WAITING, TrackingService.PAUSE_REST,
-                            TrackingService.PAUSE_OTHER).forEach { reason ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(selected = pauseReason == reason, onClick = { pauseReason = reason })
-                                Text(reason)
-                            }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Груз", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(trip.cargo.ifBlank { "Не указан" },
+                            style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp),
+                            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+                            overflow = TextOverflow.Clip)
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Состояние", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Icon(Icons.Default.Done, null, tint = Color(0xFF16834A), modifier = Modifier.size(16.dp))
+                            Text(if (selectedMileageType == TrackingService.TYPE_LOADED) "С грузом" else "Без груза",
+                                style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp),
+                                fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
                         }
                     }
-                },
-                confirmButton = {
-                    TextButton(onClick = { onPause(pauseReason); showPauseDialog = false }) { Text("Начать паузу") }
-                },
-                dismissButton = { TextButton(onClick = { showPauseDialog = false }) { Text("Отмена") } }
-            )
+                }
+                OutlinedButton(
+                    onClick = {
+                        val next = if (selectedMileageType == TrackingService.TYPE_LOADED) TrackingService.TYPE_EMPTY else TrackingService.TYPE_LOADED
+                        selectedMileageType = next
+                        context.getSharedPreferences("settings", 0).edit().putString("mileage_type_${trip.id}", next).apply()
+                        if (activeTripId == trip.id) onChangeType(next)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(50)
+                ) { Text(if (selectedMileageType == TrackingService.TYPE_LOADED) "Отметить: без груза" else "Отметить: с грузом", maxLines = 1) }
+            }
         }
-        OutlinedButton(onClick = onAddLog, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, null); Text(" Добавить дневной пробег")
+
+        // Blue mileage and earnings summary.
+        Card(modifier = Modifier.fillMaxWidth(), shape = cardShape,
+            colors = CardDefaults.cardColors(containerColor = blue)) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("ПРОБЕГ ПО РЕЙСУ", style = MaterialTheme.typography.labelLarge,
+                    color = Color.White.copy(alpha = 0.9f), fontWeight = FontWeight.SemiBold)
+                Text("%.1f км".format(totalKm), style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
+                HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("С грузом", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
+                        Text("%.1f км".format(loadedKm), color = Color.White, style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold, maxLines = 1)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("Без груза", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
+                        Text("%.1f км".format(emptyKm), color = Color.White, style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold, maxLines = 1)
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Ставка: ${trip.ratePerKm} ₽/км", color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall)
+                    Text(currency.format(earned), color = Color.White, fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                }
+            }
         }
+
+        // GPS monitoring card.
+        Card(modifier = Modifier.fillMaxWidth(), shape = cardShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("GPS-мониторинг", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f))
+                    Surface(color = if (activeTripId == trip.id && !isPaused) Color(0xFFD8F3E5) else MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(50)) {
+                        Text(when { activeTripId != trip.id -> "Остановлен"; isPaused -> "Пауза"; else -> "Активен" },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (activeTripId == trip.id && !isPaused) Color(0xFF16834A) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp), maxLines = 1)
+                    }
+                }
+                Text(if (activeTripId == trip.id && !isPaused) "Маршрут записывается. Пробег учитывается автоматически."
+                    else if (isPaused && activeTripId == trip.id) "Запись маршрута приостановлена."
+                    else "Запустите запись, чтобы отслеживать маршрут и пробег.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (activeTripId != trip.id) {
+                        Button(onClick = {
+                            val permissions = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                            if (Build.VERSION.SDK_INT >= 33) permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                            locationPermission.launch(permissions.toTypedArray())
+                        }, modifier = Modifier.weight(1f)) { Icon(Icons.Default.PlayArrow, null); Text(" Начать GPS-трекинг", maxLines = 1) }
+                    } else if (isPaused) {
+                        Button(onClick = { onResume(selectedMileageType) }, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Default.PlayArrow, null); Text(" Продолжить", maxLines = 1)
+                        }
+                    } else {
+                        OutlinedButton(onClick = { showPauseDialog = true }, modifier = Modifier.weight(1f)) { Text("Пауза") }
+                    }
+                    if (activeTripId == trip.id) {
+                        OutlinedButton(onClick = onStop) { Icon(Icons.Default.Stop, null); Text(" Стоп") }
+                    }
+                }
+            }
+        }
+
+        Text("Данные рейса", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Card(modifier = Modifier.fillMaxWidth(), shape = cardShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                InfoLine("Дата начала", date(trip.startAt))
+                InfoLine("Номер накладной", trip.waybill)
+                InfoLine("Отправитель", trip.sender)
+                InfoLine("Получатель", trip.receiver)
+                InfoLine("Автомобиль", trip.vehicle)
+                InfoLine("Ставка оплаты", "%.2f ₽/км".format(trip.ratePerKm))
+                InfoLine("Начислено по рейсу", currency.format(earned))
+                OutlinedButton(onClick = onAddLog, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Add, null); Text(" Добавить дневной пробег")
+                }
+            }
+        }
+
+        if (showPauseDialog) {
+            AlertDialog(onDismissRequest = { showPauseDialog = false }, title = { Text("Причина остановки") },
+                text = { Column {
+                    listOf(TrackingService.PAUSE_LOADING, TrackingService.PAUSE_UNLOADING, TrackingService.PAUSE_WAITING,
+                        TrackingService.PAUSE_REST, TrackingService.PAUSE_OTHER).forEach { reason ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = pauseReason == reason, onClick = { pauseReason = reason })
+                            Text(reason)
+                        }
+                    }
+                } },
+                confirmButton = { TextButton(onClick = { onPause(pauseReason); showPauseDialog = false }) { Text("Начать паузу") } },
+                dismissButton = { TextButton(onClick = { showPauseDialog = false }) { Text("Отмена") } })
+        }
+
         Text("Пробег по дням", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         val groupedLogs = logs.groupBy { Triple(it.dayStart, it.mileageType, it.ratePerKm) }.values.map { entries ->
             entries.first().copy(km = entries.sumOf { it.km }, hours = entries.sumOf { it.hours })
         }.sortedByDescending { it.dayStart }
-        if (groupedLogs.isEmpty()) Text("Дневные записи пока отсутствуют.")
+        if (groupedLogs.isEmpty()) Text("Дневные записи пока отсутствуют.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         groupedLogs.forEach { log ->
-            ListItem(
-                headlineContent = { Text(date(log.dayStart)) },
-                supportingContent = {
-                    Text("${if (log.mileageType == "EMPTY") "Без груза" else "С грузом"} · ${log.hours} ч · ${log.note}")
-                },
-                trailingContent = { Text("%.1f км".format(log.km)) }
-            )
+            ListItem(headlineContent = { Text(date(log.dayStart)) },
+                supportingContent = { Text("${if (log.mileageType == "EMPTY") "Без груза" else "С грузом"} · ${log.hours} ч · ${log.note}") },
+                trailingContent = { Text("%.1f км".format(log.km)) })
         }
-        Spacer(Modifier.height(14.dp))
+
         Text("Остановки и паузы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        val pauseTotalMs = pauses.sumOf { pause ->
-            (pause.endedAt ?: System.currentTimeMillis()) - pause.startedAt
-        }.coerceAtLeast(0L)
+        val pauseTotalMs = pauses.sumOf { pause -> (pause.endedAt ?: System.currentTimeMillis()) - pause.startedAt }.coerceAtLeast(0L)
         InfoLine("Общее время пауз", durationText(pauseTotalMs))
         InfoLine("Оценка времени движения", durationText(estimateMovingTimeMs(trackPoints, pauses)))
         Text("Время движения оценивается по GPS-интервалам; стоянки и интервалы с пропусками GPS не включаются.",
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-        if (pauses.isEmpty()) {
-            Text("Остановок пока нет.", color = MaterialTheme.colorScheme.secondary)
-        } else {
-            pauses.forEach { pause ->
-                ListItem(
-                    headlineContent = { Text(pause.reason) },
-                    supportingContent = { Text("${date(pause.startedAt)} — ${pause.endedAt?.let { date(it) } ?: "сейчас"}") },
-                    trailingContent = {
-                        Text(durationText(((pause.endedAt ?: System.currentTimeMillis()) - pause.startedAt).coerceAtLeast(0L)))
-                    }
-                )
-            }
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (pauses.isEmpty()) Text("Остановок пока нет.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        else pauses.forEach { pause ->
+            ListItem(headlineContent = { Text(pause.reason) },
+                supportingContent = { Text("${date(pause.startedAt)} — ${pause.endedAt?.let { date(it) } ?: "сейчас"}") },
+                trailingContent = { Text(durationText(((pause.endedAt ?: System.currentTimeMillis()) - pause.startedAt).coerceAtLeast(0L))) })
         }
-        Spacer(Modifier.height(14.dp))
+
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Документы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f))
+            Text("Документы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             IconButton(onClick = { picker.launch(arrayOf("image/*", "application/pdf")) }) {
                 Icon(Icons.Default.AttachFile, "Добавить документ")
             }
         }
-        Text("Файлы: ${docs.size}")
+        Text("Файлы: ${docs.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         docs.forEach { doc ->
-            ListItem(
-                headlineContent = { Text(doc.title) },
-                supportingContent = { Text(doc.uri, maxLines = 1) },
+            ListItem(headlineContent = { Text(doc.title) },
+                supportingContent = { Text(doc.uri, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 trailingContent = {
                     IconButton(onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(doc.uri), "*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(doc.uri), "*/*")
                             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         try { context.startActivity(intent) } catch (_: Exception) {}
                     }) { Icon(Icons.Default.Map, "Открыть") }
-                }
-            )
+                })
         }
-        Spacer(Modifier.height(20.dp))
+
+        Button(onClick = { showFinishDialog = true }, modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(50.dp), colors = ButtonDefaults.buttonColors(containerColor = blue)) {
+            Text("Завершить рейс", maxLines = 1)
+        }
         OutlinedButton(onClick = onDelete, modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
             Icon(Icons.Default.Delete, null); Text(" Удалить рейс")
         }
+        if (showFinishDialog) {
+            AlertDialog(onDismissRequest = { showFinishDialog = false }, title = { Text("Завершить рейс?") },
+                text = { Text("Рейс будет отмечен как завершённый. Продолжить?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        scope.launch {
+                            if (activeTripId == trip.id) onStop()
+                            val finalKm = (dao.dailyKmTotal(trip.id)).takeIf { it > 0.0 } ?: trip.totalKm
+                            dao.updateTrip(trip.copy(status = "Завершён", endAt = System.currentTimeMillis(), totalKm = finalKm))
+                            showFinishDialog = false
+                        }
+                    }) { Text("Завершить") }
+                },
+                dismissButton = { TextButton(onClick = { showFinishDialog = false }) { Text("Отмена") } })
+        }
     }
 }
-
 @Composable
 private fun InfoLine(label: String, value: String) {
     ListItem(headlineContent = { Text(label, color = MaterialTheme.colorScheme.secondary) },
