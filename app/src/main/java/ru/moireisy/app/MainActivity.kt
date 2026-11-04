@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import ru.moireisy.app.data.*
@@ -118,18 +119,54 @@ fun MoiReisyApp() {
             topBar = {
                 TopAppBar(
                     title = {
-                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Text("Мои Рейсы", fontWeight = FontWeight.Bold)
-                            Text(
-                                when {
-                                    selected != null -> "Карточка рейса"
-                                    showFinance -> "Финансовый отчёт"
-                                    showFuel -> "Учёт топлива"
-                                    else -> "Ваш рабочий день"
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(1.dp)
+                            ) {
+                                Text("Мои Рейсы", fontWeight = FontWeight.Bold, maxLines = 1)
+                                Text(
+                                    when {
+                                        selected != null -> "Карточка рейса"
+                                        showFinance -> "Финансовый отчёт"
+                                        showFuel -> "Учёт топлива"
+                                        else -> "Ваш рабочий день"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                            if (activeTripId > 0L && selected == null && !showFinance && !showFuel) {
+                                Surface(
+                                    color = Color(0xFFE5F7EC),
+                                    shape = RoundedCornerShape(50)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        Box(
+                                            Modifier.size(7.dp).background(
+                                                Color(0xFF16A34A),
+                                                RoundedCornerShape(50)
+                                            )
+                                        )
+                                        Text(
+                                            "GPS",
+                                            color = Color(0xFF16834A),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
                         }
                     },
                     navigationIcon = {
@@ -174,7 +211,7 @@ fun MoiReisyApp() {
                                 showFuel = false
                             },
                             icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                            label = { Text("Главная", maxLines = 1) }
+                            label = { Text("Главная", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), overflow = TextOverflow.Clip) }
                         )
                         NavigationBarItem(
                             selected = selectedTab == "finance",
@@ -184,7 +221,7 @@ fun MoiReisyApp() {
                                 showFuel = false
                             },
                             icon = { Icon(Icons.Default.ReceiptLong, contentDescription = null) },
-                            label = { Text("Финансы", maxLines = 1) }
+                            label = { Text("Финансы", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), overflow = TextOverflow.Clip) }
                         )
                         NavigationBarItem(
                             selected = selectedTab == "fuel",
@@ -194,13 +231,13 @@ fun MoiReisyApp() {
                                 showFuel = true
                             },
                             icon = { Icon(Icons.Default.LocalGasStation, contentDescription = null) },
-                            label = { Text("Топливо", maxLines = 1) }
+                            label = { Text("Топливо", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), overflow = TextOverflow.Clip) }
                         )
                         NavigationBarItem(
                             selected = false,
                             onClick = { showSettings = true },
                             icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                            label = { Text("Настройки", maxLines = 1) }
+                            label = { Text("Настройки", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), overflow = TextOverflow.Clip) }
                         )
                     }
                 }
