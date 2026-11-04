@@ -13,15 +13,15 @@ android {
         applicationId = "ru.moireisy.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "2.1.0"
+        versionCode = 9
+        versionName = "2.2.0"
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    
+
     kotlinOptions {
         jvmTarget = "17"
     }
