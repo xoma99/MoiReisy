@@ -295,6 +295,7 @@ fun MoiReisyApp() {
     }
 }
 
+
 @Composable
 private fun Dashboard(
     trips: List<Trip>, onSelect: (Long) -> Unit,
@@ -302,43 +303,105 @@ private fun Dashboard(
     modifier: Modifier = Modifier
 ) {
     val totalKm = trips.sumOf { it.totalKm }
+
     Column(modifier.fillMaxSize().padding(16.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             StatCard("Всего рейсов", trips.size.toString(), Modifier.weight(1f))
             StatCard("Пробег, км", "%.0f".format(totalKm), Modifier.weight(1f))
         }
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = onFinance, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.AccountBalanceWallet, null)
-                Spacer(Modifier.width(6.dp)); Text("Финансы")
+
+        Spacer(Modifier.height(14.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            OutlinedButton(
+                onClick = onFinance,
+                modifier = Modifier.weight(1f).height(82.dp),
+                contentPadding = PaddingValues(4.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.AccountBalanceWallet, null)
+                    Text("Финансы", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                }
             }
-            OutlinedButton(onClick = onFuel, modifier = Modifier.weight(1f)) {
-                Text("Топливо")
+
+            OutlinedButton(
+                onClick = onFuel,
+                modifier = Modifier.weight(1f).height(82.dp),
+                contentPadding = PaddingValues(4.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("⛽", style = MaterialTheme.typography.titleMedium)
+                    Text("Топливо", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                }
             }
-            OutlinedButton(onClick = onSettings, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.Settings, null)
-                Spacer(Modifier.width(6.dp)); Text("Настройки")
+
+            OutlinedButton(
+                onClick = onSettings,
+                modifier = Modifier.weight(1f).height(82.dp),
+                contentPadding = PaddingValues(4.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Settings, null)
+                    Text("Настройки", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                }
             }
         }
-        Spacer(Modifier.height(18.dp))
-        Text("История поездок", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(10.dp))
+
+        Spacer(Modifier.height(22.dp))
+        Text(
+            "История поездок",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(8.dp))
+
         if (trips.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Пока нет рейсов. Нажмите +, чтобы добавить первый.")
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    "Пока нет рейсов",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    "Нажмите «+», чтобы добавить первую поездку.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 items(trips, key = { it.id }) { trip ->
-                    Card(onClick = { onSelect(trip.id) }, modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        onClick = { onSelect(trip.id) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text("${trip.fromPlace} → ${trip.toPlace}", fontWeight = FontWeight.Bold)
+                            Text(
+                                "${trip.fromPlace} → ${trip.toPlace}",
+                                fontWeight = FontWeight.Bold
+                            )
                             Spacer(Modifier.height(5.dp))
-                            Text("${trip.cargo.ifBlank { "Груз не указан" }} · ${trip.status}",
-                                color = MaterialTheme.colorScheme.secondary)
+                            Text(
+                                "${trip.cargo.ifBlank { "Груз не указан" }} · ${trip.status}",
+                                color = MaterialTheme.colorScheme.secondary
+                            )
                             Spacer(Modifier.height(5.dp))
-                            Text("Накладная: ${trip.waybill.ifBlank { "—" }} · %.1f км".format(trip.totalKm))
+                            Text(
+                                "Накладная: ${trip.waybill.ifBlank { "—" }} · %.1f км"
+                                    .format(trip.totalKm)
+                            )
                         }
                     }
                 }
@@ -346,6 +409,7 @@ private fun Dashboard(
         }
     }
 }
+
 
 @Composable
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
